@@ -1,0 +1,762 @@
+ Dica: se estiver no windows, é bom instalar o windows terminal preview (possibilita a criação de abas: zookeeper, kafka, consumer, producer, etc)
+ Fazer essa confuguração: módulo 5 - kafka udemy-torrent (francês) -> aula 10 e 11 (windows) tem também no curso kafka para iniciantes - udemy
+ --1º Subir zookeeper
+ zookeeper-server-start.bat C:\development\TOOLS\kafka\kafka\config\zookeeper.properties  
+ Subir no gitbash
+ zookeeper-server-start.bat C:/development/TOOLS/kafka/kafka/config/zookeeper.properties
+
+ 
+ --2º Subir kafka
+ kafka-server-start.bat C:\development\TOOLS\kafka\kafka\config\server.properties
+ Subir no gitbash
+ kafka-server-start.bat C:/development/TOOLS/kafka/kafka/config/server.properties
+ 
+  --3º Subir kafka (réplica broker)
+ kafka-server-start.bat C:\development\TOOLS\kafka\kafka\config\server2.properties
+ 
+ Será criado no diretório data do kafka  com os devidos arqivos, se tudo der certo no start anterior
+ 
+ (kafka/config) server.properties -> 
+ 1) se altera a porta do kafka aqui
+ 2) altera o número de partições padrão dos tópicos
+ 3) altera o dir dos logs
+ 
+ Dica: para qualquer comando do kafka, basta rodar apenas ele que aparecerá a lista de parâmetros obrigatória em description. Ex.: kafka-console-consumer
+ 
+ Kafka visualization (Ponte)
+ https://softwaremill.com/kafka-visualisation/
+ 
+ ##########################
+ # Curso Kafka Udemy
+ # Kafka para iniciantes
+ # Commands
+ ##########################
+ Obs.: o localhost pode ser o ip interno do seu server
+ 
+ >>Listar tópicos / list topics
+ CLI: kafka-topics --bootstrap-server localhost:9092 --list
+  
+ >>Criar topics sem partições
+ CLI: kafka-topics --bootstrap-server localhost:9092 --create --topic NOME_TOPIC
+
+ >>Criar topics com partições e fator de replicação
+ CLI: kafka-topics --bootstrap-server localhost:9092 --create --topic NOME_TOPIC --partitions NUMBER --replication-factor NUMBER
+ 
+ DEFAULT partitions = 1 e replication-factor = 1
+ Obs.: na versão do KAFKA a partir da versão 2.2 não é obrigatório mencionar --partitions e replication-factor (o kafka coloca 1 como default para ambos)
+ Obs2.: replication-factor tem que ser <= BROKERS_NUMERS (senão como ele vai replicar se não existe broker para realizar as replicações)
+ Obs3.: sobre a criação do tópico --> WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. To avoid issues it is best to use either, but not both.
+Created topic first_topic.
+
+ 
+ >>Criar topics com partições
+ CLI: kafka-topics --bootstrap-server localhost:9092 --create --topic NOME_TOPIC --partitions NUMBER
+ obs.: com partições, o que implica: 
+ 
+ >>Alterar topics com novas partições
+ CLI: kafka-topics --bootstrap-server localhost:9092 --alter --topic NOME_TOPIC --partitions NUMBER
+ Obs.: para essa alteração, não deve ter nenhum consumer desse tópico rodando
+ 
+ >> Criar mensagens em um tópico (iniciar producer/produtor)
+ CLI: kafka-console-producer.bat --broker-list localhost:9092 --topic NOME_TOPIC 
+ (depois, na seguinte linha terminal, vc pode digitar as mensagens para enviar ao tópico pelo producer)
+ 
+ Obs.: essa não é a melhor forma de produzir as mensagens, mas para título de conhecimento é válido.
+ É importante observar que para o "producer" ele espera o endereço do broker list ao invés do bootstrap-server.
+ Obs.: em prod é recomendado ter pelo menos 3 instrâncias do kafka.
+ 
+ >> Criar mensagens em um tópico (iniciar producer/produtor) com o tipo de produtor
+ CLI: kafka-console-producer.bat --broker-list localhost:9092 --topic NOME_TOPIC --producer-property acks=TYPE
+ TYPE: all, 0,1
+ (no Windows depos, na seguinte linha terminal, vc pode digitar as mensagens para enviar ao tópico pelo producer)
+ 
+ Aula muito BOa sobre produtor ACKS
+ PAST  - twitter producer -> 6 
+ 
+ >> Criar mensagens em um tópico (iniciar producer/produtor) sem o tópico ter sido criado ainda (NÃO RECOMENDADO. DEVE SER CRIADO O TÓPICO ANTES DE PRODUZIR, pois são colocadas as devidas configurações de partitions e replication-factor)
+ CLI: kafka-console-producer.bat --broker-list localhost:9092 --topic NOME_TOPIC
+ (depois, na seguinte linha terminal, vc pode digitar as mensagens para enviar ao tópico pelo producer)
+ Obs.: kafka cria o tópico para você, mas dará um WARN:
+ WARN [Producer clientId=console-producer] Error while fetching metadata with correlation id 3 : {new_topic=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient)    
+ 
+ >> Ler as mensagens do tópico a partir de que o consumer subiu (iniciar consumer)
+ CLI: kafka-console-consumer --bootstrap-server localhost:9092 --topic NOME_TOPIC
+ Obs.: se tiverem mensagens produzidas antes do consumer subir, ele não vai pegar as legadas.
+ 
+ Obs.: no consumer, o parâmetro é o bootstrap server mesmo.
+ 
+  >> Ler as mensagens do tópico a partir de que o consumer subiu (iniciar consumer) e por grupo
+ CLI: kafka-console-consumer --bootstrap-server localhost:9092 --topic NOME_TOPIC --group GROUP_NAME
+ Obs.: se tiverem mensagens produzidas antes do consumer subir, ele não vai pegar as legadas.
+ 
+ >> Ler as mensagens do tópico desde o início
+ CLI: kafka-console-consumer --bootstrap-server localhost:9092 --topic NOME_TOPIC --from-beginning
+ obs.: o consumer pegar as mensagens desde o início do producer.
+ 
+ >> Múltiplos consumers
+ Se subir um producer () e vários consumers, as mensages enviadas pelo producer sem o grupo-id vão ser disparadas para todos os consumers. 
+ Esse comportamento é quando não se especifica o grupo-id
+ Se o produtor subir sem partições especificadas (default 1), mesmo que se tenha 10 consumidores, as mensagens geradas pelo produtor vai cair apenas em um consumidor.
+ O número de particções do producer deve ser igual/maior que o número de consumers, daí as mensagens vai para todos.
+ Se quiser ver as partições do tópico, deve-se usar o --describe (ver logo a seguir)
+ 
+ Ex.: Producer com 10 partitions -> consegue enviar mensagens até 10 consumidores
+ 
+ >> Ler as mensagens do tópico por grupo
+ CLI: kafka-console-consumer --bootstrap-server localhost:9092 --topic NOME_TOPIC --group NOME_GRUPO
+ obs.: qnd se especifica o grupo, o kafka passa a ter o controle do que foi lido por meio do controle de offsets.
+ 
+  >> Ler as mensagens do tópico por grupo desde o início (só vai surtir efeito do --from-beginning, se os offsets não já tiverem sido marcados)
+ CLI: kafka-console-consumer --bootstrap-server localhost:9092 --topic NOME_TOPIC --group NOME_GRUPO --from-beginning
+ obs.: qnd se especifica o grupo, o kafka passa a ter o controle do que foi lido por meio do controle de offsets.
+ 
+ >> Descrever detalhes de um tópico:
+ CLI: kafka-topics --bootstrap-server localhost:9092 --describe --topic NOME_TOPIC
+ obs.: como se fosse um ls -la
+
+ 
+  >> Descrever detalhes de todos os tópicos:
+ CLI: kafka-topics --bootstrap-server localhost:9092 --describe
+ obs.: como se fosse um ls -la
+ 
+ >> Deletar um tópico:
+ CLI: kafka-topics --bootstrap-server localhost:9092 --delete --topic NOME_TOPIC
+ obs.: no windows se deletar um tópico o kafka dá um bug que tem que apagar todo o diretório /data do diretório do kafka para iniciar tudo de novo
+ Obs 2.: é importante não ter nenhum consumer conectado.
+ Excluir por parte do nome:
+ kafka-topics --bootstrap-server localhost:9092 --delete --topic 'nome.*'
+ 
+ Aula 07 (Módulo 06 CLI - udemy v2)
+ >> Listar grupos-id (todos os consumers groups) por consumidores (stackoverflow e curso kafka udemy v2)
+ CLI: kafka-consumer-groups.bat --list --bootstrap-server localhost:9092
+  
+ >> Listar todos os consumidores conectadas por grupo-id (stackoverflow e curso kafka udemy v2) -> ver os offsets processados
+ CLI: kafka-consumer-groups.bat --describe --group GRUPO_NAME_LISTADO_PASSO_ANTERIOR --bootstrap-server localhost:9092
+ obs.: qnd vai alterar alguma coisa no producer (partitions, name etc etc), os consumidores devem estar stopados.
+ 
+ Aula 08 - Resetting The Offsets (Módulo 06 CLI - udemy v2)
+ >> Resetar os Offssets
+ 1) earliest
+CLI: kafka-consumer-groups.bat --bootstrap-server localhost:9092  --group GRUPO_NAME_LISTADO_PASSO_ANTERIOR --reset-offesets --to-earliest --execute [--all-topics | --topic TOPIC_NAME]
+Tipos de reset dos offests {--reset-offesets}:
+ You must choose one of the following reset specifications: 
+  --to-datetime, --by-period, --to-earliest, --to-latest, --shift-by, --from-file, --to-current.
+ 2) shift-by (quantidade de offs sets para reprocessar)
+ CLI: kafka-consumer-groups.bat --bootstrap-server localhost:9092  --group GRUPO_NAME_LISTADO_PASSO_ANTERIOR --reset-offsets --shift-by [NUMBER_OFSETS] --execute [--all-topics | --topic TOPIC_NAME]
+Ele vai voltar a quantidade especificada em NUMBER_OFSETS de cada partição daquele tópico. Se eu voltar 2 e o tópico tiver 3 partições, 6 mensagens serão colocadas para ser reprocessadas.
+Ex.: fazendo um shift em 2 posições de offsets
+Ex.: kafka-consumer-groups.bat --bootstrap-server localhost:9092  --group my-first-application --reset-offsets --shift-by 2 --execute --topic first-topic
+
+ >> Mensagens com id
+O kafka mantem a ordem de criação quando as mensagens são produzadas com um id, caso contrário elas serão ordenados(consumidas) fora da ordem de inserção no tópico.
+Se criar mensagens com o ID, e tiver que aumentar as partições o kafka vai perder a ordem. O importante é criar os tópicos com um número aproximado de partições, caso se queira manter a ordem.
+CLI: kafka-console-producer.bat --broker-list localhost:9092 --topic NOME_TOPIC --property "parse.key=true" --property "key.separator=,"
+ex.: 1,mensagem
+
+--property "print.key=true": indica que o kafka deve parsear a msg procurando por uma chave
+--property "key.separator=,": separador da chave (ex. acima)
+
+Tem fazer a configuração do ID no producer e consumer
+
+>>Faz o print da mensagem com a chave(id)
+CLI: kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic NOME_TOPIC --property "print.key=true" --property "key.separator=," --group NOME_GRUPO
+
+
+>>Faz o print da mensagem com a chave(id)
+CLI: kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic NOME_TOPIC --property "print.key=false" --property "key.separator=," --group NOME_GRUPO
+
+>> Replicação de tópicos
+Default do kafka é 1, mas se ele cair não terá nenhuma outra instência desse tópico no broker, caso o kafka esteja replicado.
+Se colocar a replicação para 3, e o kafka estiver configurado como cluster, o tópico terá 3 instâncias definidas. 1 no broker líder e mais 2 em réplicas (seguidores do líder). 
+
+>> Cluster kafka (seção 06 - aula 22):
+-> no diretório do kafka/data, deve criar a pasta kafka2;
+-> replica o arquivo server.properties para server2.propoerties
+   depois edita o : broker.id para 1 (0 é do kafka líder)
+                    listener:PLAINTEXT://::9093 (9092 é o kafka líder)
+					log.dirs: altera a pasta final para ../data/kafka2
+Obs.: conduktor free não suporta mais de um broker.
+					
+Kafka link: 
+https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
+
+
+###############################
+# KAFKA COURSE ALURA
+###############################
+
+##Mudar o arquivo de log do kafka e zookeeper:
+Acesse: kafka/config
+1) server.properties  - kafka
+log.dirs=C:/development/TOOLS/kafka/kafka_2.13-2.7.0/data/kafka
+
+2) zookeeper.properties - zookeeper
+dataDir=PATH DATA DIR CRIADO por você
+Ex.:
+dataDir=C:/development/TOOLS/kafka/kafka/data/zookeeper 
+
+Obs.: esses diretório é onde o kafka/zookeeper irão guardar suas configurações, tópicos etc
+
+##Subir Zookeeper e Kafka:
+1º zookeeper
+2º kafka
+
+### COlcoar kafka no path do S.O. windows
+Abra enviroments e edit path, adicionando o caminho do diretório do kafka.
+Ex.: C:\development\TOOLS\kafka\kafka\bin\windows
+A partir disso, vc poderá executar todos os comandos do kafka de onde estiver.
+
+##########################
+# Curso Kafka Udemy
+# Kafka Spotify, Cassandra
+# Commands
+##########################
+--
+Request/Reply (enviar requisição e ficar esperando a resposta)
+Seção 3 - aula 8
+
+--
+Cassandra Client GUI
+
+
+ ##########################################################
+ # Apache Kafka Series - Learn Apache Kafka for Beginners v2 
+ #                  Conceitos
+ #########################################################
+
+>>>>>>>>> Aula 4 - Topic Replication (4. Kafka theory) <<<<<<<<<<<
+Geralmente o fator de replicação dos tópicos devem estar entre 2 e 3 (e sendo o padrão ouro - show). 2 é um pouco arriscado
+Ex.: TopicA with 2 partitions and 2 replications factor
+BROKER1       BROKER2       BROKER3
+              particion1 -> particion1
+			  TA            TA 
+particion0 -> particion0
+TA			  TA 
+
+Tem uma imagem legal na aula demostrando isso.
+3min de aula
+Apenas um Broker pode ser o leader de uma determianda partição, cada broker será leader de uma deteminada partição. 
+Esse broker é o que recebe os dados para a partição e realiza a réplica para os demais (ISR - in-sync-replica).
+Quem gerencia essa questão do leader e o ISR é o zookeeper.
+
+>>>>>>>>> Aula 5 - Producers And Messages (4. Kafka theory) <<<<<<<<<<<
+Produtores:
+eles sabem automaticamente para qual broker enviar os dados. Se não tiver um id estpecificado, os dados se organizarão via round-robin (distribuição de carga - conforme abaixo) 
+para os brokers, que esses por sinal enviarão automaticamente para as partições, sem que precisemos nos preocupar.
+         ----> Broker 1º
+Produtor ----> Broker 2º
+         ----> Broker 3º
+		 
+Os produtores podem escolher a forma para receber a confirmação dos dados (acnolowdgement - ack). Existem 3 modos de confirmação:
+ack:0 - produtor não espera pela confirmação (possível perda de dados) . É usado, porém é perigoso; Se enviar o dados e o broker estiver fora do ar, não haverá confirmação de retorno para o produtor.
+ack:1 - produtor deve esperar pela confirmação do broker (perda de dados limitada). É o padrão -> a partir do kafka 2.0
+ack:all - broker lider + réplicas recebem os dados e realizam a confirmação (não há perda de dados). Porém, possui maior latência e maior pocessameto dos dados
+
+
+Para ACK == 1, O líder de partição solicita a confirmação ao Producer, se não obtiver resposta, o dado será reprocessado (reenviado)
+Se o leader(partition-0) cair e não houver réplica dessa partição, no modo ack == 1 vai haver perda de dados.
+
+Para usar o all=all deve ser usada uma config min.insync.replicas (pode ser configurado para o broker ou tópico).
+Ex.: min.insync.replicas=2 (cenário mais comum ) -> implica que pelo menos 2 brokers/tópico devem responder que possuem o dado.
+
+1)COnfig retires Producer (reprocessamento Producer)
+Ref sobre retries:
+https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#producerconfigs_retries
+default do retry é 0 = para kafka <= 2.0
+default do retry é 2147483647 = para kafka >= 2.0
+2)max.in.flight.requests.per.connection -> default = 5. Ele controla a ordem de envio dos dados, mas precisa setar para 1 (perde performance) - mantém a ordenação dos dados que foram enviados ao tópico no caso de um reprocessamento.
+
+Config Producer
+delivery.timeout = 120000ms => deviver.temout = 7. (padrão são 120s == 2 min ) - tempo de reprocessamento do produtor - reenvio das msgs ao broker/tópico ou oao serviço rest etc
+
+Tudo isso acima (retries, max.in) foi substituído pela idempondente no kafka nas versões > 1.0
+Doc da idempodência:
+https://issues.apache.org/jira/browse/KAFKA-5494
+
+Chaves: os produtores podem usar chaves para envio das mensagens (string, number etc, qualquer coisa que vc definir).
+Se não tiver uma chave, os dados serão enviados via round-robbin (1° msg -> broker1, 2° msg -> broker2, n msg -> broken)
+Se tiver a chave, as msgs serão enviadas sempre para mesma partição. Elas sempre serão executadas na mesma ordem dentro daquela partição. Ex.: truck_id, pedidos_id 	
+truck_id_01 sempre vai -> partition0
+truck_id_02 sempre vai -> partition0	 
+truck_id_05 sempre vai -> partition1
+truck_id_06 sempre vai -> partition2	 
+Esse meanismo de ids é chamado de hashins, é um pouco avançado. Vc não escolhe para qual partição aquela chave vai, ela entra numa partição e ficará sendo enviada sempre para ela.
+
+Consumers e Producer config:
+configure producer: https://kafka.apache.org/documentation/#producerconfigs
+configure consumers:  https://kafka.apache.org/documentation/#consumerconfigs
+
+>>>>>>>>> Aula 6 - Consumers & Consumers Groups <<<<<<<<<<<
+Os consumidores irão ler os dados das partições por ordem (offset1, offset2, offset3 offsetN). Nunca para de um para outro sem consluir o anterior. Ex.: ir para o 3 sem ter passado pelo 2.
+1:30min
+Quando um consumir ler dados de duas partições simultaneamento, não tem como garantir a ordem entre elas. Ele ler de forma aleatória as mensagens das duas partições (ver abaixo).
+Consumer -> partition1 [0,1,2,3,4]
+         -> partition2 [0,1,2,3,4,5,6,7,8]
+O controle de offset é garantido na partição, mas a quantidade de msge entre os pedidos entre as partições. COmo ele lê em paralelo, pode ler mais em uma do que em outra. Ler um pouco de cada uma.
+
+2:20min
+#Consumidor por group id
+
+A quantidade de consumidores está diretamente ligada a quantidade de partições. 3Consumers -> 3 partitions.
+Se tiver mais consumidores, esses ficarão disponíveis para caso algum caia, ele assumirá. Essa é a única explicação para ter  Consu. > Part.
+
+
+>>>>>>>>> Aula 7 - Consumers Offsets <<<<<<<<<<<
+COnsumidores trabalham com o conceito de "semântica de entrega", existem 3 tipos de semânticas de entrega dos consumidores.
+Os consumidores escolhem quando commitar os offesets.
+1) no máximo uma vez (RUIM)
+Offsets são comitados assim que a mensagem é recebida. Se der errado, não será reprocessada. (Geralmente essa abordagem não é preferido)
+
+2) pelo menos uma vez (PREFERIDA)
+Offesets são comitados depois que as mensagens são recebidas e processadas.
+Se o processamente der errado, ela tentará ser lida novamente
+Pode acarretar no reprocessamento duplicado. Tenha certeza que seu reprocessamento esteja IDEMPONDENTE não não causar impacto nos sistema.
+3) exatamente uma vez
+APENAS processamento de KAFKA para KAFKA - por meio da API do KAFKA streams
+Se for KAFKA para sistema externo (API, database), a abordagem mais viável é usar o consumidor idempondente (item 2).
+
+>>>>>>>>> Aula 8 - KAFKA Broker DIscover <<<<<<<<<<<
+Cada kafka broker é chamado de bootstrap server.
+Cada bootstrap server será capaz de se conectar com todos os demais brokers no cluster.
+Cada Broker conheçe todos os demais brokers, tópicos e partições (metadata).
+
+KAFKA client ----conecta--->> BROker1
+O broker1 devolve a lista dos metadados de todo o cluster(todos os brokers, tópicos e partições, Ips, etc etc).
+O broker1, tem mais 3 brokers irmãos (broker2, broker3, broker4) que compõem o cluster. Então esses matadados são de toda essa estrutura.	
+
+>>>>>>>>> Aula 9 - Zookeeper <<<<<<<<<<<
+Manter os brokers juntinhos
+Vai eleger uma partição líder
+Envia notificação para o kafka em caso de modificações, quando um tópico é criado, broker cai, broker sobe, tópico é deletado etc etc
+Kafka não trabalha sem o zookeeper.
+Trabalha por padrão com um número ímpar de servidores (3,5,7 etc etc). Isso não pode ser mudado.
+1m:55s
+Zookeeper tem um líder e os demais são seguidores lincados ao líder.
+O líder cuida dos direitos dos brokers.
+Consumidores e Produtores se comunicam com o KAFKA, e esse só gerencia os metadados em zookeeper.
+As compensações de offssets ficam armazenadas no tópico do kafka e não no zookeeper
+Não lidamos, na maioria das vezes com o zookeeper diretamente, mas sim com o brokers do kafka.
+
+
+>>>>>>>>> Aula 10 - Módulo 7 <<<<<<<<<<<<<<<<
+Assing qnd seek
+Kafka permite que o consumidor leia de uma tópico específico, bem como de um determinado offset até um outro indicador (15 à 20 - por exemplo)
+ConsumerDemoAssingSeek04.java - classe example
+
+>>>>>>>>> Aula 11 - Módulo 7 <<<<<<<<<<<<<<<<
+Client vi-direcional
+Older client can talk with new broker
+New client can tal with older broker
+https://www.confluent.io/blog/upgrading-apache-kafka-clients-just-got-easier/
+
+
+
+>>>>>>>>> Aula 2 - Módulo 9 (Kafka Twitter) <<<<<<<<<<<<<<<<
+API KEY: eA8ULFNWh0RBXaccMZXhbAmS8
+API SECRET KEY: yBBu6o85Fw0Pi7LEGOzQEWjFJW4BAJkVCfmXzcS81D6Z8qiCg1
+BEARER TOKEN: AAAAAAAAAAAAAAAAAAAAAIKDNwEAAAAAx2XsV%2Bk%2B7dvEkCUh0eppxstx4Vw%3DB1mzYOJjPSCFGXTBxdNV7bVv0ibFs1gvEUanvBT5hHjroUyfgb
+Access Token: 1372314721018384390-uyYQMNdmuFhSRgMN5UvTUkZiQWoem4
+Access token secret: yeIUiRPrYtTkQOBDwtSFhUF2EwwsOGMlqQmcaX9KdaPWw
+
+Pegar a dependência e o código de acesso:
+https://github.com/twitter/hbc
+
+Criar tópico Twitter:
+kafka-topics.bat --zookeeper 127.0.0.1:2181 --create --topic twitter_tweets --partitions 6 --replication-factor 1
+
+Criar consumidor para Twitter:
+kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic twitter_tweets
+
+>>>>>>>>>> Aula 10 - Módulo 9 (Kafka Twitter) <<<<<<<<<<<<<<
+Messsage compression
+compreesion.type ->> none, gzip, lz4, snappy
+
+Link reference about compressions types:
+https://blog.cloudflare.com/squeezing-the-firehose/
+
+Serve para blocos de mensagens grandes, pois diminui a latência, melor redimento,  menor consumo de disco
+Ex.: msg com 10mb se reduz para 2.5mb. Fator de compressão de 4x.
+Desvantages (bem menor, mas tem):
+processamnto de CPU - compressão (produtor) e decompressão (consumidor)
+
+De modo geral:
+Os melhors em rendimento segundo o professor Francês:lz4, snappy
+gzip tem maior compressão, mas não é tão rápido.
+
+>>>>>>>>>> Aula 11 - Módulo 9 (Kafka Twitter) - MESSAGE COMPRESSION -  COnfiguração AVANÇADA <<<<<<<<<<<<<<
+Considere, para compressão, ajustes em:
+'linger.ms': millisegundos que o kafka espera até enviar o pxm lote/batch. (Default 0 = imediatamente)
+ tempo de atraso/delay para o kafka enviar o batch até a quantidade de msgs do batch ficar pronta. 
+'batch.size': tamanho do batch de mensagens em MB para o envio (default é 16kb). Se o bacth size estiver completo,os dados serão enviados e não espera pelo linger.ms
+
+Sugestão de ajuste para o batch.size: 16, 32, 64 -> ajuda na compressão.
+
+O bacth é alocado por padrtição, então cuidado para os números não serem tão altos.
+
+Serve para grandes batchs, maior compressão e alto throughput
+Por default é 5, quer dizer 5 mensagens em voo (entendi como prontas) e 5 mensagens individuais enviadas ao mesmo tempo.
+Essas 5 mensagens são enviadas em um único lote, diminuindo a latência
+
+Monitorar batch: KAFKA Producer Metrics
+
+>>>>>>>>>> Aula 14 - Módulo 9 (Kafka Buffer Message Producer - COnfiguração AVANÇADA) <<<<<<<<<<<<<<
+Se o produtor produz mais rápido que o borker, as msgs serão guardadas na memória (buffer).
+Por padrão o produtor tem um buffer de '30mb' para conseguir armazenar até entregar de fato ao Broker.
+
+max.block.ms=60000 (ex.: 60s -> 1 min) tempo para bloquear do método .send do produtor até lançar uma exceção ou o broker começar a receber as msgs dentro do tempo estabelecido.
+buffer.memory= qtd de mb que o buffer guardará, caso o broker não esteja acessível por algum motivo.
+
+
+>>>>>>>>>> Aula 2 - Módulo 10 (Elastic search COnsumer) <<<<<<<<<<<<<<
+Gera a chave no site bonsai (elastic search hospedados)
+//deve remover o http e porta da url no java
+https://v6xpfiqd2c:67lhgcteyz@kafka-basics-cluster-3887026340.us-east-1.bonsaisearch.net:443
+user: v6xpfiqd2c
+key: 67lhgcteyz
+
+Check status ELK:
+health -> satus do cluster
+nodes -> nós do cluster
+index -> armazena os dados [criamos o twitter]
+Criar um doc: 
+PUT /twitter/tweets/1
+{
+  "course":"kafka for beginners",
+  "instructor": "Stephane Maarek",
+  "module": "elastic srarch"
+}
+Criar índice
+PUT /tweeter
+
+Monitorar ELK:
+_cat/health?v
+_cat/nodes?v
+_cat/indices?v
+
+Link para criar os comandos no ELK:
+https://www.elastic.co/guide/en/elasticsearch/reference/7.x/cat-health.html
+
+
+>>>>>>>>>> AULA 06 - MÓDULO 10 (ELASTIC SEARCH) - ENTREGA SEMÂNTIA - SOBRE COMMITS de OFFSETS  <<<<<<<<<<<<
+1) at the most once (no máximo uma vez) - offset são comitados assim que a ms é recebido. Se tiver erro, ela nunca mais será lida.
+2) at least once: offeset são processados depois que a mensagem é processada. Se der erro, vai haver reprocessamento. Pode resultar duplicação de msg pelo
+fato de haver reprocessamento. Reprocessamento tem que ser idempondente. (****Use esse aqui na maioria dos casos);
+3) exactily once:  for kafka stream API (entre kafka e kafka).
+
+>>>>>>>>>> AULA 06/'07'/ - MÓDULO 10 (ELASTIC SEARCH) - IDEMPOTENCE  <<<<<<<<<<<<
+Fala de duas estratégias na aula 07 de ID para garantir que no reprocessamento não duplique os dados, mas sim atualize-os, se necessário for.
+Class onde está o exemplo: ElasticsearchConsumer
+
+>>>>>>>>>> AULA 08 - MÓDULO 10 (CONSUMER POOL BEHAVIOR)  <<<<<<<<<<<<
+'fetch.min.bytes' -> quantidade de bytes que o consumidor deve pegar do broker por requisição (default I)
+'max.poll.records' -> quantidade de mensagens que o consumidor deve pegar do broker por requisição. (defaut 500).
+                      Deve aumentar a quantidade se as mensagens forem pequenas e o servidor dispõe de RAM para aumentar o rendimendo de processamento. 
+'max.partitions.fetch.bytes' -> quantidade de mb devolvido de cada partição pelo broker. (default 1mb)
+                                Se for ler de muitas partições, 100 por exemplo, vai precisar de muita memória RAM. 
+'fetch.max.bytes' -> dados máximos devolvidos por cada solicitação de busca, abrangendo várias partições. (default 50mb)
+                     As buscas do consumidor geralmente são em paralelo até atingir esse limite. 
+DICA: não altere esses configuções a não ser que você tenha um bom motivo, ou seja, uma situação bem peculiar. A equipe do kafka já deixou nos trinques.					 
+
+
+>>>>>>>>>> AULA 09 - MÓDULO 10 (CONSUMER MANUAL COMMIT)  <<<<<<<<<<<< ver a aula novamente e anotar...
+enable.autocommit=true & synchronous processing of batch (modo fácil - porém pode dar problema)
+                  Essa estratégia commit automaticamente a cada 5 segundos (auto.commit.interval.ms=5000) default.
+enable.autocommit=false & manual commits of 
+
+>>>>>>>>>> AULA 12 - MÓDULO 10 (CONSUMER OFFSETS - Offsets Reset Behaviour)  <<<<<<<<<<<< 
+offset.retention.minutes -> tempo de retenção de uma mensagem no tópico. (Default 7 dias)
+
+>>>>>>>>>> AULA 13 - MÓDULO 10 (Replaynig data)  <<<<<<<<<<<< 
+Reset offset (substituindo os dados) > reseta todos os offesets e o consumer executará novamente (ElasticSearchConsumer02.java)
+kafka-consumer-groups --bootstrap-server localhost:9092 --group kafka-demo-elasticsearch --reset-offsets --execute --to-earliest --topic twitter_tweets
+
+
+>>>>>>>>>> AULA 14 - MÓDULO 10 (Consumer hearbeat) - TEORIA - NÃO DEVE MEXER NISSO  <<<<<<<<<<<< 
+session.timeout.ms (default 10s): tempo que o consumir tem para enviar sinal de vida ao broker. Se não enviar é considerado morto e ocorre um rebalanceamento.
+heartbeat.interval.ms (default 3s) -> geralmente configurado para ser 30% do session.timeout.ms
+max.poll.interval.ms (default 5min) -> tempo entre two polls antes de declarar o consumidor morto.
+
+
+>>>>>>>>>> AULA 01 - MÓDULO 12 (Kafka Connectors)  <<<<<<<<<<<< 
+Serve para linkar o kafka a várias estrtuturas (ELK, mongo, DB, etc etc)
+https://www.confluent.io/product/connectors/
+
+Connector twitter (diz o professor que dá para configurarmos sem uma linha de código)
+https://github.com/jcustenborder/kafka-connect-twitter
+
+PEgar o arquivo: connect-standalone.properties do kafka e levar para o projeto:
+C:\development\TOOLS\kafka\kafka\config
+
+Alterar no arquivo -> plugin.path=connectors -> para ficar com o mesmo nome da pasta do projeto: connectors
+
+
+PEgar o assets do connector e jogar as libs na pasta do projeto: kafka-connect/connectors/twitter-connect
+https://github.com/jcustenborder/kafka-connect-twitter/releases
+
+--Listar os Offsets -> LAG
+kafka-consumer-groups --bootstrap-server localhost:9092 --all-groups --describe
+
+>>>>>>>>>> AULA 02 - MÓDULO 12 (Kafka Connectors - Exemple twitter with config files -> folder project: kafka-connect)  <<<<<<<<<<<< 
+
+--Criar tópico com partições e replicação
+kafka-topics --bootstrap-server localhost:9092 --create --topic NOME_TOPIC --partitions NUMBER --replication-factor NUMBER
+Ex.: https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.0.1/kafka-working-with-topics/content/creating_a_kafka_topic.html
+
+
+--Criar um conector windows (ver o run.sh):
+connect-standalone.bat connect-standalone.properties twitter.properties
+
+
+>>>>>>>>>> AULA 03 - MÓDULO 12 (Kafka Streams)  <<<<<<<<<<<< 
+-> fazer select -> filter post twitter by likes;
+                   count number os twittes;
+				   combine two or more topics;	
+Detalhe: o prof disse que fazer esses pontos acima não é tão amigável para desenvolvedores, porém existe o kafka stream.
+O que é kafka stream: biblioteca para processamento de dados e transformação de dados de forma fácil com o java.
+Especificidades:
+ App java padrão;
+ não precisa de um cluster separado;
+ alta escalabilidade;
+ um registro por vez a ser processado(no batching);
+ qualquer tamanho de aplicação: pequena a grandes
+ 
+ COmo funiona:
+ Pega dados de um/vários tópico(s), processa e devolve para o um/vários tópico(s).
+ CLUSTER
+ BROker1 -> kafka stream
+ BROker2 -> kafka stream
+ BROker3 -> kafka stream
+ 
+ Libs kafka-streams:
+ https://mvnrepository.com/artifact/org.apache.kafka/kafka-streams/2.8.0
+ 
+ Surgiu: kafka: 0.11 -> evloluiu: 2.0
+>>>>>>>>> Aula 1 - CLI Introduction (6. CLI (Command Line Interface)) <<<<<<<<<<<
+
+>>>>>>>>>> AULA 04 - MÓDULO 12 (Kafka Streams)  <<<<<<<<<<<< 
+FIltrar os tweets com mais de 10000 seguidores
+--Criar novo tópico
+kafka-topics.bat --zookeeper 127.0.0.1:2181 --create --topic important_tweets --partitions 3 --replication-factor 1
+--COnsumir do novo tópico
+kafka-console-consumer --bootstrap-server localhost:9092 --topic important_tweets --from-beginning
+
+Para testar:
+1º - liga o TwitterProducer01 - 
+2º - liga o StreamsFilterTweets - ele vai filtrar e joga no tópico dos motherfucks os que possuem os seguidores definidos no java
+
+>>>>>>>>>> AULA 05 - MÓDULO 12 (Kafka Schema Registry) - O professor deu uma breve introção apenas  <<<<<<<<<<<< 
+Para registrar os modelos de dados e evitar a produção de dados ruins(mal estruturados) para o consumidor.
+Kafka produz e consume dados sem saber do que se trata.
+O Schema registry, é um componente independente, deve estar habilitado para conversar com o producer e consumer
+Apache Avro como formato de dados
+         -> producer send a schema  ->   SCHEMA REGISTRY ------>>>>> consumer
+PRODUCER    send avro content ->   KAFKA        -> get avro content      CONSUMER (get a schema from schema registry)
+
+Se for optar por usar o registry:
+mudar o json/string - para apacha avro (mais leve que json segundo o professor).
+altera o  produtos e consumir
+Usar o schema registry da confluent (open source)
+Tempo de configuração
+
+
+>>>>>>>>>> AULA 01 - MÓDULO 13 13. Real World Insights and Case Studies (Big Data  Fast Data)  <<<<<<<<<<<< 
+Falar sobre brokets, partições e fator de replicação (Boas Dicas):
+Número ideal de fator de replicação: 
+- Pelo menos 2;
+- Geralmente 3;
+- Máximo 4;
+
+- Ideal: 3 replication factor com pelo menos 3 broker (ainda assim com apenas 3 brokers há um fluxo grande de dados entre eles)
+A regra é : Brokers >= replication factor.
+Número de partições deve ser equivalnte aos de consumidores.
+Se tiver uma partições e 5 consumidos, 4 consumidores ficarão obsoletos.
+
+As demais aulas desse módulo são para falar dos estudos de casos (arquiteturas TAXI, banks etc etc)
+
+>>>>>>>>>> AULA 01-04 - MÓDULO 14. Kafka in the Enterprise for Admins  <<<<<<<<<<<< 
+Fala o modo ADMIN do kafka (cluster - kafka e zookeeper) - legal para admins.
+Monitomamento com datadog/kibana/Elastic Search.
+]Tem uns links com modelos/exemplos sobre a arquitetura do netflix, ubber.
+
+>>>>>>>>>> AULA 01-04 - MÓDULO 16. Advanced Topics Configurations - Conteúdo legal sobre os tópicos, partições e segmentos  <<<<<<<<<<<< 
+1. Changing a Topic Configuration - legal add/remove topic configs (replication factor example)
+2. Segment and Indexes
+Um tópico é feito de partições e partições de seguimentos(guardam as faixas de offesets) e os seguimentos têm os índices index_0[offset 0-500], incex_1[offset 501-1000], index_n[offset 1001-1500])
+Apenas um segment está ativo para receber escrita;
+log.segment.bytes => máximo tamanho de um seguimento em bytes; (default 1GB)
+log.segment.ms => tempo que o kafka vai esperar antes de comitar para fechá-lo se não estiver cheio (default 1 semana)
+Um segmento possui dois arquivos que são chamados de índices:
+1) offset da posição de leitura: permite kafka saber onde ler para encontrar a mensagem
+2) timestamp do offset: permite kafka saber onde ler para encontrar a mensagem por data
+Essas informações ficam dentro do diretório: kafka/data/SEUTOPIC-NUMEROPARTICAO:
+000000000000000.index (citado acima)
+000000000000000.log
+000000000000000.timeindex (citado acima)
+
+Podemos ver esses dados em kafka/data
+NOMETOPIC_NUMEROPARTICAO -> Ex.: TOPIC-0 
+
+--- Aula 03
+Log Cleanup policies
+Policy 1)
+log.cleanup.policy=delete (default to all user topics) -->> 
+Deleção baseada em data(Default) -> 1 semana por default
+Deleção baseada on max size log(Default is -1 == infinite)
+
+Policy 2)
+log.cleanup.policy=compact (default para topic _consumer_offset)
+Ver as configurações: entre na pasta kafka/data e rode: kafka-topics --zookeeper 127.0.0.1:2181 --describe --topic __consumer_offsets
+-delete based on keys of your messages
+-deve deletar chaves velhas e duplicadas depois que o segmento ativo for comitado
+-retenção de tempo infinito
+
+Qual a frequência de limpeza do kafka: default 15s (ele checa para realizar as devidas limpezas)
+Essa limpeza ocorre nos segmentos das partições
+log.cleanup.backoff.ms
+
+
+>>>>>>>>>> AULA 04- MÓDULO 16. Advanced Topics Configurations - Log CLean up policy: delete   <<<<<<<<<<<< 
+
+log.retention.hours (default is 168 > one week)
+log.retention.bytes -> tamanho em bytes para cada partição (default is -1 > infinite )
+
+
+>>>>>>>>>> AULA 05- MÓDULO 16. Advanced Topics Configurations - Log CLean up policy: compact   <<<<<<<<<<<< 
+Stop here
+log.cleanup.policy=compact
+Essa política retira do segmento as chaves duplicadas que já foram comitadas. Vale lembrar que ssa estratégia não evita duplicações e sim faz a limpeza de dados duplicados
+e que já foram comitados.
+segment.ms(default 7 dias) => máximo de tempo para esperar antes de fechar um segmento ativos.
+segment.bytes (default 1GB)
+min.compact.lag.ms(default 0) => tempo para esperar para uma msg seja compactada
+delete.retention.ms (default 24hrs) => tempo que um consumidor ainda pode ver a mensagem excluída até ela ser totalmente excluída.
+min.cleanable.dirty.ratio (default 0.5) => limpeza mais eficiente.
+
+
+>>>>>>>>>> LAST MODULe 18 - MÓDULO 18. Starting Kafka Differently  <<<<<<<<<<<< 
+AULA 02:
+Via confluent:
+https://docs.confluent.io/ccloud-cli/current/install.html?utm_medium=sem&utm_source=google&utm_campaign=ch.sem_br.brand_tp.prs_tgt.confluent-brand_mt.xct_rgn.latam_lng.eng_dv.all&utm_term=confluent%20cli&creative=&device=c&placement=&gclid=Cj0KCQjw4cOEBhDMARIsAA3XDRiFNCFZMRlZOEYWAYOL9bUc85Z7lMEmL9-LfZxLu_V3hluOCYDKMncaArfgEALw_wcB
+Acessar o diretório do concluence, após descompact para dar um start/stop:
+./confluent local start (sube tudo do confluent)
+./confluent local start kafka
+./confluent local stop
+./confluent local destroy
+
+AULA 03 - Multiple kafka brokers:
+
+Acessar a pasta ./data do kafka e fazer cópia dos arquivos: server.properties -> server1.properties, serverN.properties
+Editar os arquivos a partir do 1 e alterar três configs: 
+broker.id=1
+log.dirs >> diretório do log URL/kafka1 (depois tem que criar esse diretório na pasta do KAFKA)
+listeners=PLAINTEXT://:9093 
+Para cada broker você deve fazer um increase na numeração editndo as cópias do arquivo server.properties.
+
+Subir as instâncias
+kafka-server-start PATH/server.properties
+kafka-server-start PATH/server1.properties
+kafka-server-start PATH/serverN.properties
+
+Produtor Brokers:
+Tem que criar o tópico antes
+Todos os brokers
+kafka-console-producer.bat --broker-list localhost:9092,localhost:9093,localhost:9094 --topic NOME_TOPIC
+
+1 brokers apenas
+kafka-console-producer.bat --broker-list localhost:9092 --topic NOME_TOPIC
+
+Consume by outro broker
+kafka-console-consumer bootstrap-server 127.0.0.1:9093 --topic NOME_TOPIC --from-beginning
+
+Só para constatar que vc produz por brokers diferentes e consomer por outro e todos as msgs chegam. :)
+
+AULA 06 - subir com docker compose:
+https://github.com/conduktor/kafka-stack-docker-compose
+Ler a parte de requirements e exportar as variáveis que lá existem.
+Depois subir, por examplo: multiple zookeeper / multiple kafka.
+
+docker-compose -f FILE_COMPOSE up -> sobe
+docker-compose -f FILE_COMPOSE stop -> para
+docker-compose -f FILE_COMPOSE down -> remove
+
+AULA 07 - Kafka advertised host setting:
+Nunca subir o kafka apontando par ao PUBLIC IP, ele pode mudar. Use a config ADV_HOST
+
+AULA 08 - Starts kafka remote machine:
+
+######################
+# KAFKA DOCKER
+######################
+>> Excute kafka commands on container
+
+docker exec -it ID_CONTAINER bash
+
+Ex.: docker exec -it 024385e7fbb5 bash
+
+
+######################
+Check port connection
+######################
+
+Ex.: nc -vz localhost 9093
+
+
+####################################################
+# LINKS REFERENCE 
+# START DOCKER KAFKA ON CONTAINER WITH ZOOKEEPER
+####################################################
+--Comandos na mão kafka - sem docker
+https://gist.github.com/DevoKun/01b6c9963d5508579f4cbd75d52640a9
+https://itnext.io/how-to-install-kafka-using-docker-a2b7c746cbdc
+https://www.youtube.com/watch?v=HX9RsIQktuQf
+https://www.youtube.com/watch?v=U5PshJKECe4
+https://www.youtube.com/watch?v=oGJw0RSqROk
+https://github.com/bitnami/bitnami-docker-kafka/issues/83
+
+#Install kafka, zookeeper and bridge (one by one)
+https://itnext.io/how-to-install-kafka-using-docker-a2b7c746cbdc
+
+######################################
+# Sobre listeners kafka - muito bom:
+######################################
+https://rmoff.net/2018/08/02/kafka-listeners-explained/
+https://www.confluent.io/blog/kafka-listeners-explained/
+https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+
+
+###################################
+# KAFkA connect / ksqldb / AVRO
+###################################
+https://www.infoq.com/br/articles/apache-kafka-ksqldb/#mainLogin/
+https://www.confluent.io/blog/avro-kafka-data/
+
+
+#################################
+# KAFKA 	with spring boot
+#################################
+https://www.confluent.io/blog/apache-kafka-spring-boot-application/?utm_medium=sem&utm_source=google&utm_campaign=ch.sem_br.nonbrand_tp.prs_tgt.kafka_mt.mbm_rgn.latam_lng.eng_dv.all&utm_term=%2Bkafka%20%2Bspring&creative=&device=c&placement=&gclid=Cj0KCQiA4L2BBhCvARIsAO0SBdb23QBUDU_bCdhjkw2IWSiRGivNPtQ4ZhpeIvBRYzY2587iwUMKrbcaApAiEALw_wcB
+https://www.javainuse.com/spring/spring-boot-apache-kafka-hello-world
+
+#########################
+# External volumes Kafka
+########################
+Se atentar para conceder o CHMOD ao usuário 1000:1000
+https://docs.confluent.io/platform/current/installation/docker/operations/external-volumes.html
+
+
+########################################
+# Kafka consumer client 0.9 with java 
+########################################
+https://www.confluent.io/blog/tutorial-getting-started-with-the-new-apache-kafka-0-9-consumer-client/
+
+
+################################
+# Aulas grátis KAFKA - Udemy
+################################
+https://www.udemy.com/topic/apache-kafka/?sort=price-low-to-high&locale=pt_BR&persist_locale=
+
+###############################
+# DEAD Letter Kafka - legal
+# Artigo
+###############################
+https://dev.to/kafkabr/como-implementar-dead-letter-topic-com-spring-kafka-585e
