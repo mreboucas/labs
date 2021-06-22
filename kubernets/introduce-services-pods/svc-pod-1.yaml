@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-pod-1
+spec:
+  type: NodePort
+  selector:
+    app: primeiro-pod
+  ports:
+    - port: 80
+      #Se tiver apenas a port, ele já define o targetPort (que é do pod)  
+      nodePort: 30000 #porta para acesso externo

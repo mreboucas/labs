@@ -1,0 +1,114 @@
+Para o WINDOWS: docker desktop
+Startar cluster no windows: aprir docker desktop e ativar a opção kubernets em configurações
+
+Para o LINUX instalar: kubectl, minikube e virtualbox
+Startar  cluster no linux: minikube start --vm-driver=virtualbox (rodar esse comando toda vez que reiniciar a máquina)
+
+
+Reference do kubernets: https://v1-18.docs.kubernetes.io/docs/concepts/cluster-administration/cloud-providers/
+
+###############
+#   PODS
+###############
+
+1 Pod - pode ter um ou mais container.
+
+> Listar os nós: kubectl get nodes
+> Listar os pods: kubectl get pods
+              
+> Criar um POD: kubectl run <NAME_POD> --image=<IMAGE:VERSION>
+              Ex.: kubectl run nginx-pod --image=nginx:latest
+
+> Escutar um pod: kubectl get pods --watch
+
+> Descrever um pod: kubectl describe pod nginx-pod <POD-NAME>
+Obs.: serve para monitorar os events: mostra os erros possíveis
+
+> Editar um pod: kubectl edit pod nginx-pod <POD-NAME> : vai abrir um arquivo e você altera a versão da imagem > nginx:1.0
+Obs.: se vc colocar a imagem incorreta vai dar erro de pull para a imagem
+
+>Criar/Editar um pod de forma declarativa: kubectl apply -f primeiro-pod.yaml <FILE-NAME>
+>Deletar um pod: kubectl delete pod <POD-NAME>
+
+Validar arquivo do kubernets (yaml): https://kubeyaml.com/
+
+Problema do imperativo: voc}e não acompanha de fato que o foi especificado para o pod, o recomendado e ser declarativo, pois tudo fica no arquivo (yaml)
+
+> Pegar IP do pod (ip de comunicação interna): kubctl get pod portal-noticias <POD-NAME> | grep IP
+
+> Testando o ip no browser: foi visto que ele não acessa pelo browser. Testar via exec (abaixo). Esse IP serve apenas para comunicação interna entre os pods.
+
+> Executar o modo iterativo/bash no kubernets [power shell]: kubectl.exe exec -it portal-noticias <POD-NAME> -- bash
+ Rodar: curl localhost -> retorna conteúdo html
+
+> Fazer mapeando de IP do container - acesso externo: 
+
+
+###############
+#   SERVICES
+###############
+Service == SVC
+> listar pod com o ip: kubectl get pod -o wide
+Se baixar um pod e subir novamente ele ganhará um novo IP, por isso o service se encarrega de realizar a comunicação interna entre os pods por meio de Ips fixos.
+
+1) atribui IP fixo
+2) atribui dns
+3) faz o load balance
+O service tem: 
+	Cluster IP - fazer a comunicação entre pods INTERNA dentro do cluster	
+	Node Port - 
+	Load Balance -> para manter uma comunicação estável entre todos os pods/nós.
+
+#Cluster IP -> comunicação INTERNA
+- Podem ser criados de forma declarativa (yaml file)
+- Todos os pods devem ter o service configurado para manter a comunicação bi-direcional. Se apenas um tiver, ele será apenas o alvo (unidirecional) da comunicação para os demais que não têm.
+- 'Labels': faz com que o um service se comunique com o(s) POD(s)
+	Ex.:
+		metadata:
+			name: pod-2
+			labels:
+				app: segundo-pod
+- 'Selector': faz com que o service selecione o pod pelo nome e o IP por onde recebe e responde as requests
+	Ex.: spec:
+			type: ClusterIP
+			selector:
+				app: segundo-pod
+			ports:
+			    - port: 9000  (ouvir)
+				- targetPort: 80 (responder - porta do pod-2)
+
+> Listar os services: kubectl get svc/services
+
+> Testar a comunicação entre pods: faz um exec no pod1 e faz um curl para o service IP.
+
+>Testar comunicação:  curl IP:PORTA
+
+Obs.: para o serviço responder via curl, o serviço que ele faz o selector deve estar no ar.
+
+#Node Port -> comunicação EXTERNA e funciona dentro do cluser como Cluster Ip.
+svc-pod-1 foi do tipo NodePort
+EX.:
+  ports:
+    - port: 80
+      #Se tiver apenas a port, ele já define o targetPort (que é do pod)  
+      nodePort: 30000 #porta para acesso externo
+
+> Pegar o IP externo: kubectl get nodes -o wide
+windows: localhost nesse caso é o externo + PORTA EXTERNA(30000) - localhost pq o windows faz o binding para o ip
+linux: 'INTERNAL-IP' listado no comando acima  + PORTA EXTERNA(30000)
+Obs.: o service do tipo nodePort faz um bind da porta interna para a externa -> 80[interna]:30000[externa] (range external port: 30000 -> 32777)
+
+> Deletar todos os pods: kubectl delete pods --all
+> Deletar todos os services: kubectl delete svc --all
+
+> mysql -u root -p
+ coloca o password
+> show databases
+> show tables
+
+#Config Map (CM) -> remover as definições de variáveis para uma área a parte
+
+> rodar/aplicar o config maps: kubectl apply -f db-configmap.yaml <CONFIGMAP-FILE.yaml>
+> listar os config maps: kubectl get configmap
+> descrever o config maps por nome kubectl describe configmap db-configmap <NAME-CONFIGMAP>
+> deletar configmap:  kubectl.exe delete configmap portal-configmap <CONFIGMAP-NAME>

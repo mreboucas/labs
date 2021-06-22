@@ -1,0 +1,9 @@
+PART 2 
+
+############################################
+#   REPLICASETS, VOLUMES E DEPLOYMENTS
+############################################
+
+ReplicaSet: criar um 'novo' pod, caso algum do cluster morra. Ele não ressuscita o antigo, ele cria um novo. rs!
+
+Docs: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/ 

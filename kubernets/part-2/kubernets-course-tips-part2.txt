@@ -1,0 +1,23 @@
+PART 2 
+
+############################################
+#   REPLICASETS, VOLUMES E DEPLOYMENTS
+############################################
+
+ReplicaSet: criar um 'novo' pod, caso algum do cluster morra. Ele não ressuscita o antigo, ele cria um novo em caso de falha. rs
+Deployment: uma camada acima do replicaset, automaticamente define um replicaset ao ser criado um deployment. Ele gerencia o versionamento dos pods.
+
+Docs: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/ 
+
+> Listar replicaset: kubectl get replicasets or rs
+> Escutar replicaset: kubectl get rs --watch
+
+Obs.: com o serviço ele faz o selector da mesma forma com o replicaset, pois o nome do labels: app é o mesmo. O replicaset substitui o POD, fazendo um conjuto desses em replicas: 
+O serviço fará todo o balanceamdno de carga para a quantidade de pods existantes.
+
+#Deployment
+
+Fez um apply no depoyment, pode executar os comandos:
+
+kubectl get rs
+kubectl get pods
