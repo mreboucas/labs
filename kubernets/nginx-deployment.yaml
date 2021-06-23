@@ -12,9 +12,10 @@ spec:
     spec:
       containers:
         - name: nginx-container
-          image: nginx:stable
+          image: nginx:1
           ports:
             - containerPort: 80
+  # deve ser igual ao labels:app          
   selector:
     matchLabels:
       app: nginx-pod

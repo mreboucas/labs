@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+#Especificações do replicaset
+metadata:
+  name: db-noticias-deployment
+spec:
+  replicas: 1
+  #Todas as especificações do nosso POD
+  template:
+    metadata:
+      name: db-noticias
+      labels:
+        app: db-noticias
+    spec:
+      containers:
+        - name: db-noticias-container
+          image: aluracursos/mysql-db:1
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - configMapRef:
+                name: db-configmap
+  #O kubernetes pod padrão não conhece o tamplete, daí tem que especificar esse seletor
+  selector:
+    matchLabels:
+      app: db-noticias # igual do labels: app (linha 12)
