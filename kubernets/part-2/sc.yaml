@@ -1,0 +1,15 @@
+#Link de exemplo de SC: https://kubernetes.io/docs/concepts/storage/storage-classes/#gce-pd
+piVersion: storage.k8s.io/v1
+kind: StorageClass # SC
+#nome do SC
+metadata:
+  name: slow
+# Provider do GCP (no link vc ver outros tipos: https://kubernetes.io/docs/concepts/storage/storage-classes/#gce-pd) 
+provisioner: kubernetes.io/gce-pd
+#provisionar localmente: https://kubernetes.io/docs/concepts/storage/storage-classes/#local
+# Essas configurações servem para criar DINAMICAMENTE: disco e volume
+parameters:
+  type: pd-standard # tipo para provisionar um disco padrão
+  fstype: ext4 # extensão do disco
+  # Se omitir ele já cria o replication-type como none, vamos deiar...
+  replication-type: none

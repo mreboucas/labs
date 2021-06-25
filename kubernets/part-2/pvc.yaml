@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-1
+spec:
+  #Faz com que acesse o pv.yaml
+  resources:
+    requests:
+      storage: 10Gi
+  accessModes:
+    - ReadWriteOnce #Escrita de um POd por vez no volume
+  storageClassName: standard

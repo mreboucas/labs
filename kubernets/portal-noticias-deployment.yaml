@@ -17,6 +17,36 @@ spec:
           envFrom:
             - configMapRef:
                 name: portal-configmap
+          #Config do liveness
+          livenessProbe:
+            httpGet:
+              #vai vai a checagem no barra mesmo
+              path: /
+              #porta será a mesma do container (80 - acima)
+              port: 80
+            # fará checagem a cada x segundos
+            periodSeconds: 10
+            # qntd de falhas que serão toleradas
+            failureThreshold: 3
+            # delay para iniciar a checam depois que o container subir
+            initialDelaySeconds: 20
+          #Config do readiness PROBE
+          readinessProbe:
+            httpGet:
+              #vai vai a checagem no barra mesmo
+              path: /
+              #porta será a mesma do container (80 - acima)
+              port: 80
+            # fará checagem a cada x segundos
+            periodSeconds: 10
+            # qntd de vezes que esse teste será executado
+            failureThreshold: 5
+            # delay para iniciar a checam depois que o container subir
+            initialDelaySeconds: 3
+          # definido recurso de CPU que o pod necessitará para ser executado
+          resources:
+            requests:
+              cpu: 10m #Dez mili cores de cpu
   replicas: 3
   #O kubernetes pod padrão não conhece o tamplete, daí tem que especificar esse seletor
   selector:

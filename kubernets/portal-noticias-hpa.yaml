@@ -1,0 +1,19 @@
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: portal-noticias-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1 # apiVersion do pod : portal-noticias-deployment.yaml
+    kind: Deployment # kind do pod : portal-noticias-deployment.yaml
+    name: portal-noticias-deployment # name do pod : portal-noticias-deployment.yaml
+  minReplicas: 1
+  maxReplicas: 10
+  # Para esse cara funcionar corretamente, tem que aplicar o arquivo: metrics-server-components.yaml
+  metrics:
+    - type: Resource #Tipo de métrica a ser utilizada: tipo recurso
+      resource:
+        name: cpu # é o recurso que será analisado 
+        target: 
+          type: Utilization
+          averageUtilization: 20 # representa 50% CPU definida (cpu: 10m) em portal-noticias-deployment.yaml. Se passar outro pode será instanciado.

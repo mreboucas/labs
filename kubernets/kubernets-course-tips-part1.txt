@@ -32,9 +32,9 @@ Obs.: se vc colocar a imagem incorreta vai dar erro de pull para a imagem
 
 Validar arquivo do kubernets (yaml): https://kubeyaml.com/
 
-Problema do imperativo: voc}e não acompanha de fato que o foi especificado para o pod, o recomendado e ser declarativo, pois tudo fica no arquivo (yaml)
+Problema do imperativo: você não acompanha de fato que o foi especificado para o pod, o recomendado e ser declarativo, pois tudo fica no arquivo (yaml)
 
-> Pegar IP do pod (ip de comunicação interna): kubctl get pod portal-noticias <POD-NAME> | grep IP
+> Pegar IP do pod (ip de comunicação interna): kubectl get pod portal-noticias <POD-NAME> | grep IP
 
 > Testando o ip no browser: foi visto que ele não acessa pelo browser. Testar via exec (abaixo). Esse IP serve apenas para comunicação interna entre os pods.
 

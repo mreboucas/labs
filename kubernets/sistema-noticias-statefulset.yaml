@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sistema-noticias-statefulset
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: sistema-noticias
+      labels:
+        app: sistema-noticias
+    spec:
+      containers:
+        - name: sistema-noticias-container
+          image: aluracursos/sistema-noticias:1
+          ports:
+            - containerPort: 80
+          # referindo-se ao arquivo sistema-configmap.yaml
+          envFrom:
+            - configMapRef:
+                name: sistema-configmap
+          # referindo-se aos arquivos pvc (sessao e imagem)
+          volumeMounts:
+            - name: imagens
+              #esse diretório é da imagem do container que o prof liberou no curso (via exec -it dá para ver)
+              mountPath: /var/www/html/uploads
+            - name: imagens
+              #esse diretório é da imagem do container que o prof liberou no curso (via exec -it dá para ver)
+              mountPath: /tmp
+          #Config do liveness PROBE
+          livenessProbe:
+            httpGet:
+              #vai vai a checagem no barra mesmo
+              path: /
+              #porta será a mesma do container (80 - acima)
+              port: 80
+            # fará checagem a cada x segundos
+            periodSeconds: 10
+            # qntd de vezes que esse teste será executado
+            failureThreshold: 3
+            # delay para iniciar a checam depois que o container subir
+            initialDelaySeconds: 20
+          #Config do readiness PROBE
+          readinessProbe:
+            httpGet:
+              #vai vai a checagem no barra mesmo
+              path: /inserir_noticias.php
+              #porta será a mesma do container (80 - acima)
+              port: 80
+            # fará checagem a cada x segundos
+            periodSeconds: 10
+            # qntd de vezes que esse teste será executado
+            failureThreshold: 5
+            # delay para iniciar a checam depois que o container subir
+            initialDelaySeconds: 3
+      volumes:
+        - name: imagens
+          persistentVolumeClaim:
+            claimName: imagens-pvc #Arquivos criados: imagens-pvc.yaml
+        - name: sessao
+          persistentVolumeClaim:
+            claimName: sessao-pvc #Arquivos criados: sessao-pvc.yaml
+  selector:
+    matchLabels:
+      app: sistema-noticias
+#Novidade do statefulset - tem que adicionar o nome do serviço que vai gerenciar esse statefulset, só assim o
+# service onde fica o node port (acesso externo) vai chegar nessa instância
+  serviceName: svc-sistema-noticias # arquivo svc-sistema-noticias.yaml campo: metadata:name

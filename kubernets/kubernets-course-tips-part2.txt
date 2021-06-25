@@ -1,9 +1,381 @@
-PART 2 
+PART 2 KUBERNETS: REPLICASETS, VOLUMES E DEPLOYMENTS
 
-############################################
-#   REPLICASETS, VOLUMES E DEPLOYMENTS
-############################################
+##################################################
+#   01 - Conhecendo replicasets e deployment
+##################################################
 
-ReplicaSet: criar um 'novo' pod, caso algum do cluster morra. Ele não ressuscita o antigo, ele cria um novo. rs!
+ReplicaSet: criar um 'novo' pod, caso algum do cluster morra. Ele não ressuscita o antigo, ele cria um novo em caso de falha. rs
+Deployment: uma camada acima do replicaset, automaticamente define um replicaset ao ser criado um deployment. Ele gerencia o versionamento dos pods.
 
 Docs: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/ 
+
+> Listar replicaset: kubectl get replicasets or rs
+> Escutar replicaset: kubectl get rs --watch
+
+Obs.: com o serviço ele faz o selector da mesma forma com o replicaset, pois o nome do labels: app é o mesmo. O replicaset substitui o POD, fazendo um conjuto desses em replicas: 
+O serviço fará todo o balanceamdno de carga para a quantidade de pods existantes.
+
+#Deployment
+
+Ao criar um deployment, ele cria os pods e o replicaset automaticamente
+SERVICE -> DEPLOYMENT( REPLICASETS -> PODS)
+
+VANTAGEM: A grande vantagem do deployment: faz o controle do versionamento dos pods e imagens. Permite criação de tags e msgs, bem como o rollback das imagens
+Quando criados, Deployments auxiliam com controle de versionamento e criam um ReplicaSet automaticamente.
+
+Fez um apply no arquivo do depoyment, pode executar os comandos:
+
+kubectl get deployment
+kubectl get rs
+kubectl get pods
+
+> Ver as revisões:  kubectl rollout history deployment nginx-deployment
+
+> Precisou alterar algo no arquivo deployment.yaml, fazer um novo apply com o record (versionamento): kubectl apply -f nginx-deployment.yaml --record 
+Ele alterou o campo CHANGE-CAUSE do history e versionou (ver comando a seguir)
+
+> Alterar a msg do campo CHANGE-CAUSE: kubectl.exe annotate deployment nginx-deployment kubernetes.io/change-cause="Definindo a imagem com a versão latest"
+
+> DESCRIBE-IMAGE. Verificar versão do pod que está em execução: kubectl.exe describe pod nginx-deployment-6d8bdc7876-l7nng <POD-NAME> | grep image
+Ver output:
+Normal  Pulling    11h   kubelet            Pulling image "nginx:1"
+Normal  Pulled     11h   kubelet            Successfully pulled image "nginx:1
+
+> Fazer rollback de uma versão:  kubectl.exe rollout undo deployment nginx-deployment <DEPPLOY-NAME> --to-revision=2 <REVISION-ID>
+Se fizer um novo describe em um dos pods vc verá a versão alterada (ver comando DESCRIBE-IMAGE
+
+> Delete deployment: 1) kubectl delete deployment nginx-deployment
+                     2) kubectl delete -f nginx-deployment.yaml
+(Apaga deployment, replicaset e pods)
+
+> Transformar replicaset em deployment: basta copiar todo conteúdo e alterar o 'kind' Deployment  e 'metadata:name' portal-noticias-deployment
+
+Link de acesso: http://localhost:30000
+
+#Volumes de persistência / store classes
+
+O que aprendemos nessa aula:
+    A manter pods em execução com ReplicaSets e Deployments através de arquivos declarativos
+    A fazer o controle de versionamento de Deployments com o kubectl
+    Como utilizar os comandos kubectl rollout para ver e alterar as versões de Deployments.
+    Que ReplicaSets são criados automaticamente dentro de um Deployment
+    Que Pods normalmente são criados através de Deployments, e não individualmente.
+	
+##################################################
+#  02 - Persistindo dados com volumes
+##################################################
+
+>> Resources:
+Volumes
+Persistent Volumes - PV
+Persistente Volume Claim - PVC
+Store Class
+
+POD -> se comunicado com -> PVC -> acessa -> PV (não será pelo seletor) e sim pelas especificações:
+spec:
+  capacity:
+    storage: 10Gi
+accessModes:
+  - ReadWriteOne 
+Essas deverão estar iguais nos dois arquivos: pvc e pv
+
+CICLO DE VIDA VOLUMES: são independentes dos containers, mas dependentes dos pods. 
+Isso quer dizer que: se o container falha não impacta, porém se todos os pods morrerem, o volume será excluído, mas os arquivos ficarão no diretório.
+Volumes possuem ciclo de vida dependentes de Pods e independentes de containers.
+O modo comum de volume, usando inclusive no docker, é o 'hostPath'
+
+VOlumes kubernets reference: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+
+> Entrar no volume do container: kubectl.exe exec -it pod-volume --container nginx-container -- bash
+                                 navegar até :/volume-dentro-container e criar um arquivo -> ver que ele criou na pasta do SO do volume: C:\development\WORKSPACES\Labs\kubernets\volumes
+> Se der um describe no pod, verá o volume criado: kubectl pod decribe pod-volume -> 'Volumes:' ...
+
+Link reference para criar volumes: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+
+> Criar um  persistent volume: pv.yaml
+> Listar persistent volume: kubectl get pv
+Sobre o campo RECLAIM: 'Retain' : diz que se não houver nada vinculado a ele, ele permanecerá vivo/existent, independente do que aconteça. 
+
+> Criar um  persistent volume claim: pvc.yamlm, um pv: pv.yaml e um pod-pv.yaml
+faze o aply de todos e ver os detalhes em: kubectl get pv, kubectl get pvc e kubectl get pods (ver o volume internamente)
+
+DICA SOBRE PV: 
+ - É necessário um PersistentVolumeClaim para acessar um PersistentVolume.
+ - PersistentVolumes possuem ciclos de vida independentes de Pods.
+ 
+##################################################
+#  03 - Storage Class [IMPORTANTE]
+##################################################
+O professor fez tudo no GOOGLE CLOUD PATAFORM e fiquei assistindo e apenas criando os arquivos localmente
+ Storage Class - SC: responsável por criar um volume dinamicamente
+ Storage Classes fornecem dinamismo para criação de PersistentVolumes conforme demanda. Adicione e remote dinamicamente.
+
+Criar um arquivo storage class: sv.yaml
+Criar outro arquivo storage class: pvc-sv.yaml
+
+PVC-SC -> se comunicado com o SV
+Se rodar:
+kubectl get pv e kubectl get pvc: é possível ver em no STATUS 'Bound' que ambos estão se comunicando. O VOLUME (pvc) de um é o NAME (pv) do outro
+
+
+Criar outro arquivo do pod: pod-sv.yaml
+POD -> PVC-SC -> PV
+
+ 
+ Storage Classes GCE
+ https://kubernetes.io/docs/concepts/storage/storage-classes/#gce-pd
+ Storage Class - Local
+ https://kubernetes.io/docs/concepts/storage/storage-classes/#local
+ 
+#03.04 - Statefulset [IMPORTANTE!!!]
+ Deployment: se o pod é deletado, os arquivos que estão nele ou referenciados (volumes) são perdidos
+ Statefulset: se o pod é deletado, ele deixa o estado Stateful, deixando os arquivos todos salvos. Na criação de um POd, ele define também um PVC (persistent volume claim). Esse acessa um PV (persistent volume)
+ StatefulSets usam PersistentVolumes e PersistentVolumeClaims para persistência de dados.
+ StatefulSets podem ser usados quando estados devem ser persistidos. 
+
+> Deletar os deployments: kubectl delete deployment sistema-noticias-deployment e substituir com a criação de um statefulset (a seguir)
+ 
+> criar o arquivo: sistema-noticias-statefulset.yaml que substituirá o sistema-noticias-deployment.yaml.
+
+Tem que aplicar o sistema-noticias-statefulset e deletar o sistema-noticias-deployment (kubectl.exe delete deployment sistema-noticias-deployment )
+
+Ao aplicar o statefulset e detelar o deployment, cadastrar uma imagem, depois deletar o "pod" de sistema noticias, ele vai ser recriado e veja que o anexo imputado
+na notícia não se perdeu por conta do estado 'statefulset'
+
+> Listar statefulset: kubectl get statefulset
+
+Criando o PVC (sessao e imagem) e PV para deixar os arquivos persistidos e não serem perdidos ao deletar o pod.
+Arquivos: imagens-pvc.yaml
+          sessao-pvc.yaml
+Depois de criados os arquivos acima, deverão ser referenciados no arquivo: sistema-noticias-statefulset.yaml
+
+Recriando tudo:
+1) kubectl apply -f imagens-pvc.yaml
+2) kubectl apply -f sessao-pvc.yaml
+ --Recriar o statefulset:
+3) kubectl.exe delete statefulset sistema-noticias-statefulset ou kubectl.exe delete -f sistema-noticias-statefulset.yaml
+4) kubectl apply -f sistema-noticias-statefulset.yaml
+
+Testar tudo:
+> kubectl get pvc
+
+NAME          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+imagens-pvc   Bound    pvc-060677f2-12f9-4bd9-aec7-d0cf76c6ea4b   1Gi        RWO            hostpath       3m10s
+sessao-pvc    Bound    pvc-3dc501dc-3115-4e68-b1c7-53cf7f73614f   1Gi        RWO            hostpath       2m59s
+
+DICA: o campo STATUS 'Bound' indica que ele já está lincado com o PV (ver abaixo no get pv). O kubernetes usa o sc (storad class) default para criar automaticamente o pv lincado.
+> ver o storage class default do kubernetes: kubectl get sc
+output:
+NAME                 PROVISIONER          RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+hostpath (default)   docker.io/hostpath   Delete          Immediate           false                  3h37m
+
+> kubectl get pv
+output:
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                 STORAGECLASS   REASON   AGE
+pvc-060677f2-12f9-4bd9-aec7-d0cf76c6ea4b   1Gi        RWO            Delete           Bound    default/imagens-pvc   hostpath                3m15s
+pvc-3dc501dc-3115-4e68-b1c7-53cf7f73614f   1Gi        RWO            Delete           Bound    default/sessao-pvc    hostpath                3m5s
+
+> kubectl get statefulset
+
+Fazer o insert de uma imagem, derrubar o pod e ver se os dados estão persistidos
+
+> Ver os volumes dentro do pod: kubectl describe pod sistema-noticias-statefulset-0 <POD-NAME>
+output:
+Volumes:
+  imagens:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  imagens-pvc
+    ReadOnly:   false
+  sessao:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  sessao-pvc
+    ReadOnly:   false
+  kube-api-access-zdsbp:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+
+
+
+O que aprendemos nessa aula:
+    Como criar PersistentVolumes dinamicamente com StorageClasses
+    StorageClasses também são capazes de criar discos de armazenamento
+    O que é um StatefulSet
+    Como utilizar StatefulSets para garantir unicidade de Pods durante reinícios e atualizações
+    Clusters possuem StorageClasses "default" e podem ser usados automaticamente se não definirmos qual será utilizado
+
+Link projeto do curso: https://github.com/alura-cursos/kubernetes-parte2/archive/Aula3.zip
+##################################################
+#  04 - Checando Status com Probes
+##################################################
+
+#04.04 - Liveness Probe
+Reference: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+Função do Probes: Tornar visível ao Kubernetes que uma aplicação não está se comportando da maneira esperada.
+
+O Arquivo que será configurado foi: portal-noticias-deployment.yaml
+
+> Aplicar o arquivo com probes: kubectl apply -f portal-noticias-deployment.yaml
+
+Agora se houve algum erro interno o pod será recriado automaticamente. Se os erros do http do probe estiverem fora dessa margem são statusCode < 200 ou statusCode > 400 o kubelet fará o renascimento do pod.
+Reference doc kubernets: Any code greater than or equal to 200 and less than 400 indicates success. Any other code indicates failure.
+
+ALterar o sistema-noticias-statefulset.yaml -> basta adicionar esse trecho:
+#Config do LIVENESS PROBE
+          livenessProbe:
+            httpGet:
+              #vai vai a checagem no barra mesmo
+              path: /
+              #porta será a mesma do container (80 - acima)
+              port: 80
+            # fará checagem a cada x segundos
+            periodSeconds: 10
+            # qntd de falhas que serão toleradas
+            failureThreshold: 3
+            # delay para iniciar a checam depois que o container subir
+            initialDelaySeconds: 20
+> aplicar: kubectl apply -f sistema-noticias-statefulset.
+
+#04.06 - Readiness Probe
+
+Configurar o readiness em sistema-noticias-deployment.yaml e portal-noticias-deployment.yaml, adicionando o seguinte código:
+#Config do readiness PROBE
+readinessProbe:
+	httpGet:
+	  #vai vai a checagem no barra mesmo
+	  path: /inserir_noticias.php (só para o sistema-noticias-deployment)
+	  #porta será a mesma do container (80 - acima)
+	  port: 80
+	# fará checagem a cada x segundos
+	periodSeconds: 10
+	# qntd de vezes que esse teste será executado
+	failureThreshold: 5
+	# delay para iniciar a checam depois que o container subir
+	initialDelaySeconds: 3
+	
+Aplicar as configurações do readiness: kubectl apply -f portal-noticias-deployment.yaml e 
+									   kubectl apply -f sistema-noticias-statefulset.yaml
+
+kubectl get pods --watch (agora vai ter o tempo de delay para checar o status health dos pods)
+
+PROBES PARA SISTEMAS LEGADOS:
+Há um terceiro tipo de probe voltado para aplicações legadas, o Startup Probe. Algumas aplicações legadas exigem tempo adicional 
+para inicializar na primeira vez. Nem sempre Liveness ou Readiness Probes vão conseguir resolver de maneira 
+simples os problemas de inicialização de aplicações legadas. Mais informações sobre Startup Probes podem ser adquiridas por aqui.
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes
+
+O que aprendemos nessa aula:
+    O Kubernetes nem sempre tem como saber se a aplicação está saudável
+    Podemos criar critérios para definir se a aplicação está saudável através de probes
+    Como criar LivenessProbes com o campo livenessProbe
+    LivenessProbes podem fazer a verificação em diferentes intervalos de tempo via HTTP
+    Como criar ReadinessProbes com o campo readinessProbe
+    ReadinessProbes podem fazer a verificação em diferentes intervalos de tempo via HTTP
+    LivenessProbes são para saber se a aplicação está saudável e/ou se deve ser reiniciada, enquanto ReadinessProbes são para saber se a aplicação já está pronta para receber requisições depois de iniciar
+    Além do HTTP, também podemos fazer verificações via TCP
+
+Projeto do curao: https://github.com/alura-cursos/kubernetes-parte2/archive/Aula4.zip
+
+######################################################
+#  05 - Como escalar com o horizontal Pod AutoScaler
+######################################################
+Link reference doc: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+
+> Definindo recurso de consumo de CPU no arquivo: portal-noticias-deployment.yaml:
+  # definido recurso de CPU que o pod necessitará para ser executado
+  resources:
+	requests:
+	  cpu: 10m #Dez mili cores de cpu
+	  
+> Criando o arquivo para o auto scale: portal-noticias-hpa.yaml
+Ver o tipo do auto scale: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#api-object
+
+> Aplicar as mudanças: kubectl apply -f portal-noticias-deployment.yaml
+					   kubectl apply -f portal-noticias-hpa.yaml
+> listar os auto scales: kubectl get hpa
+output: (replicas, targets, min, max)
+NAME                  REFERENCE                               TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+portal-noticias-hpa   Deployment/portal-noticias-deployment   <unknown>/50%   1         10        3          80s
+
+Houve um problema ao detectar o percentual utilizado dos 50% de limite definido:<unknown>/50%
+Ver o problema: kubectl describe hpa portal-noticias-hpa
+Output:
+Warning  FailedGetResourceMetric       25s (x3 over 2m25s)  horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server could not find the requested resource (get pods.metrics.k8s.io)
+Warning  FailedComputeMetricsReplicas  25s (x3 over 2m25s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server could not find the requested resource (get pods.metrics.k8s.io)
+
+MOTIVO DO PROBLEMA ACIMA: Não foi definido um servidor de métricas para que haja o funcionamento da maneira esperada.
+
+Git do metric server do kubernetes para resolução do problem: https://github.com/kubernetes-sigs/metrics-server
+
+Nahevar até releases no git acima : https://github.com/kubernetes-sigs/metrics-server/releases > baixar o arquivo da versão v0.5.0 > baixar o arquivo: components.yaml
+
+> Fazendo um aply no arquivo metrics baixado: kubectl apply -f components.yaml
+
+No readme.md do link: https://github.com/kubernetes-sigs/metrics-server tem a opção 'Configuration' que fala sobre a parte de usar ou não SSL.
+Caso não formos utilizar, tem que colcoar um novo parâmetro no components.yaml (renomeei esse arquivo para metrics-server-components.yaml): --kubelet-insecure-tls. 
+Ex.: 
+spec:
+      containers:
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=443
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+        - --kubelet-insecure-tls
+		
+> Testando agora o % de consumo dos pods: kubectl get hpa
+obs.: no curso a atualização do % de uso no campo TARGETS deu um deplay e ele mostrou um erro via decribe no hpa: kubectl get hpa portal-noticias <HPA-NAMe>
+Na minha versão, não peguei esse erro.
+output: (% usado, minpods, max pods, replicas etc etc)
+NAME                  REFERENCE                               TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+portal-noticias-hpa   Deployment/portal-noticias-deployment   10%/50%   1         10        3          15h
+
+> Testar a elasticidade por meio do arquivo: sh ./script-stress.sh 0.001 > out.txt (criei 5 instâncias de chamadas)
+> Dê um watch para ver o HPA: kubectl get hpa --watch
+> Dê um watch para ver o HPA: kubectl get pods --watch
+
+RESOLVER O PROBLEMA DO METRICS NO LINUX: https://kubernetes.io/pt-br/docs/tutorials/hello-minikube/#habilitando-complementos-addons
+Tem que habilitar os addons do minikube e depois o métricas server (ponto 2).
+minikube addons list -> mostra as extensões que existem
+> habilitar o metrics server: minikube addons enable metrics-server
+> Estressar via linux: kubectl get nodes -o wide: pega o IP (INTERNAL-IP) e joga o arquivo script-stress.sh
+
+#05.08 Para saber mais: VerticalPodAutoscaler
+
+Além do HorizontalPodAutoscaler, o Kubernetes possui um recurso customizado chamado VerticalPodAutoscaler. O VerticalPodAutoscaler remove a necessidade de definir limites e pedidos por recursos do sistema, como cpu e memória. Quando definido, ele define os consumos de maneira automática baseada na utilização em cada um dos nós, além disso, quanto tem disponível ainda de recurso.
+
+Algumas configurações extras são necessárias para utilizar o VerticalPodAutoscaler. Mais informações podem ser obtidas nesse link .
+https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler
+
+Também podemos ver mais informações específicas sobre diferentes Cloud Providers, como o GCP e a AWS. Links abaixo
+https://cloud.google.com/kubernetes-engine/docs/concepts/verticalpodautoscaler
+https://docs.aws.amazon.com/eks/latest/userguide/vertical-pod-autoscaler.html
+
+Projeto completo do curso: https://github.com/alura-cursos/kubernetes-parte2/archive/Todos-Arquivos.zip
+
+
+O que aprendemos nessa aula:
+    Reiniciar a aplicação incessantemente através de ReplicaSets/Deployments nem sempre resolverá o problema
+    HorizontalPodAutoscalers são responsáveis por definir em quais circunstâncias escalaremos nossa aplicação automaticamente
+    Como definir o uso de recursos de cada container em um Pod
+    O que é, e como utilizar um servidor de métricas
+    Como utilizar um HorizontalPodAutoscaler através de arquivos de definição
+
+
+RESOURCES:
+pod
+rs
+deploy
+vol
+hpa
+pv
+pvc
+svc
+sc
+cm
+sts
+	
