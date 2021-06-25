@@ -262,7 +262,7 @@ Obs.: a política AdministratorAccess é a mais completa, vc pode criar outras p
 > Acessar os grupos: IAM > LDE: User groups
 
 Dados da KEY que se pega no arquivo:
-AKIA56TE3A6Q3UV33CAG -> user
+SUA_CHAVE new_user_credencials.csv -> user
 S84kmdIJxoC/VUJ1XP7bGCI+p0Quki7BiLe4uWf/ - secretkey
 sa-east-1 - SP (Essa região é a que vc está trabalhando na AWS - tem que pegar o nome no combobox)
 us-east-1 - EUA (Norte Virgínia)
@@ -270,7 +270,7 @@ us-east-1 - EUA (Norte Virgínia)
 Confgurando o acesso a aws via AWS Cli
 Ex.:
 C:\Users\modu>aws configure
-AWS Access Key ID [None]: AKIA56TE3A6Q3UV33CAG
+AWS Access Key ID [None]: SUA_CHAVE (new_user_credencials.csv)
 AWS Secret Access Key [None]: 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
 Default region name [None]: sa-east-1 / us-east-1
 Default output format [None]: json

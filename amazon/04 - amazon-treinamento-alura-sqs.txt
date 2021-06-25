@@ -30,4 +30,6 @@ Obs.: vc pode atribuir a permissão tanto no usuário, quanto no grupo (User Gro
 > Adicionar ao grupo AWS sqs: IAM > User groups > admin2 > Add permissions > search for AmazonSQSFullAccess > marque checkbox > Add permissions
 Obs.: quando se adiciona a policy ao grupo, por padrão os usuário desse receberão as permissões por herança.
 
-Detalhe: eu estou usando o usário criado no curso do EC2, daí ao adicionar um usuário vc deve fazer download das credenciais, vc não acessará mais pelo site.
+Detalhe: eu estou usando o usário criado no curso do EC2, daí ao adicionar um usuário vc deve fazer download das credenciais (new_user_credencials.csv), vc não acessará mais pelo site.
+
+Gerei a chave em Ec2 e no curso de lambda fiz a troca de região para o norte de virgínia, via aws configure. (está no arquivo essa troca)
