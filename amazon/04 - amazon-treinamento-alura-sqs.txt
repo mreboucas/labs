@@ -1,0 +1,33 @@
+##################################
+# 01 Conhecendo o AWS SQS
+##################################
+
+> Criar uma fila: SQS > create Queue > standard > create Queue
+
+> Enviar mensage para fila : Amazon SQS > Queues > 'clique msg name' alura-teste > [BSD] >Send and receive messages
+																- body: olá mundo
+																- [BSD] > send message
+																
+> Ver mensagens/informações da fila : Amazon SQS > Queues > 'clique msg name' alura-teste
+> Fazer um poll de mensagens da fila : Amazon SQS > Queues > 'clique msg name' alura-teste >  'button' poll for messages
+                                                                                             - Clique no id para o ver o body da message
+                          																	 - Deletar a messge: clique check e delete					 
+
+Nesta aula, aprendemos:
+    O SQS – Simple Queue Service – É o serviço de mensageria da AWS e, nele, podemos enviar e receber mensagens sem provisionar nenhum servidor. Este modelo é altamente escalável e confiável, pois é a própria AWS que cuida da disponibilidade deste serviço.
+    Vimos a importância do desacoplamento de sistemas, em que os consumidores processam mensagens em sua própria disponibilidade e necessidade.
+    Analisamos as vantagens de chamadas assíncronas, que são tolerantes a falhas de rede ou indisponibilidade de sistemas. Chamadas síncronas, por outro lado, exigem 100% de disponibilidade do sistema que está sendo chamado, o que é algo muito difícil (se não impossível) de se atingir quando desenvolvemos na nuvem.
+    Por último, abrimos o console da AWS, selecionamos uma região, buscamos pelo serviço SQS, criamos uma fila e testamos o envio e recebimento de mensagens.
+	
+
+##############################################
+# 02 Trabalhando com AWS SQS via AWS-CLI
+##############################################
+
+> Adicionando ao usuário AWS o AWS SQS: IAM > clique user name > [Button] Add permissions >  Attach existing policies directly > search for AmazonSQSFullAccess  > next > add
+Obs.: vc pode atribuir a permissão tanto no usuário, quanto no grupo (User Groups)
+
+> Adicionar ao grupo AWS sqs: IAM > User groups > admin2 > Add permissions > search for AmazonSQSFullAccess > marque checkbox > Add permissions
+Obs.: quando se adiciona a policy ao grupo, por padrão os usuário desse receberão as permissões por herança.
+
+Detalhe: eu estou usando o usário criado no curso do EC2, daí ao adicionar um usuário vc deve fazer download das credenciais, vc não acessará mais pelo site.

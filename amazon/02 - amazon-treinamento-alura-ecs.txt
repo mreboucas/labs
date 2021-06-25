@@ -1,0 +1,324 @@
+###################################################
+01 CONHECENDO O ELASTIC CONTAINER SERVICE
+###################################################
+
+# 01.02 - Criando o primeiro cluster
+
+MS -> Service Search > Elastic Container Service - Get started
+						1) Container definition: sua aplicação docker já empacotada
+						2) Task definition: parâmetros/definições necessários para imagem docker (qtd de memória etc etc)
+						3) service: são os serviços dockerrizados - as instâncias ecs
+						4) cluster: agrupamento de ecs
+					 
+ > Step 1: Container and Task Exemplo de criação > sample-app (php exemplo) -> observe os vaores padrões para as taks (memória e CPU) valores padrões
+ > Step 2: Service: next com default values
+ > Step 3: cluster: next com default values 
+    Obs.: sobre o Farget -> modelo de gerenciamento de máquinas para os serviços docker de forma mais abstrata (similar ao Ec2). Ec2 tem mais liberdade para certas
+	customizações
+	Farget: cobrado por tarefa
+	Ec2: cobrado por instâncias alocadas
+	Essa criação 'default' ao término já cria as subenets, vpc, security groups etc
+ Para pegar o IP PÚBLICO: MLE: Clusters: MI(Task): clicar na task name : network: Públic Ip
+ > Instância Ecs farget não cria instância no ec2.
+ 
+ > O que é fargate?
+ O AWS Fargate permite executar containers sem a necessidade de gerenciar servidores de instâncias do AWS EC2. Ou seja, você não precisar se preocupar em 
+ escolher tipos de servidor, decidir quando o tamanho do clusters ou otimizar os recursos.
+ 
+ > Preços do Farget
+ https://aws.amazon.com/pt/fargate/pricing/
+ 
+ 
+Nessa aula aprendemos:
+    o que é AWS Fargate
+    a diferença entre Container Definition, Task Definition, Service e Cluster
+    o modelo de cobrança do Fargate (link)
+	https://aws.amazon.com/pt/fargate/pricing/
+
+###################################################
+02 Ensaiando a Orquestração
+###################################################
+> MLE > cluster > clique name > MI Tasks > check > stop (o serviço para provisionar outra task de imediato)
+> MLE > cluster > clique name > MI Service> check > update: veja que o número de tasks é igual 1 (sempra ele vai manter a todo custo uma tarefa em execução)
+> Parar uma task > cluster > cluster name> MI > services > update: Number of tasks = 0 > next, next, update
+> Quero provisionar 3 tasks > mesmo processo de cima e coloca 3 e salva.
+
+#02.02 - Utilizando o AWS Cli
+Obs.: para configurar tem que ver o tópico 8 do curso de Ec2.
+Existem clientes específicos da AWS para cada serviços, mas o prof preferiu instalar o aws cli para contemplar todos de uma vez (aws cli). Ex.: Tem o aws ecs-cli
+
+Comandos aws ecs:
+--Listar todos os clusters: aws ecs list-clusters
+--Listar todos os serviços: aws ecs list-services
+--Listar service by cluster name: aws ecs list-services --cluster default
+--Listar tasks: aws ecs list-tasks
+--Listar tasks de um cluster: aws ecs list-tasks --cluster default
+--Atualizar as tasks de um service: aws ecs update-service --service sample-app-service --desired-count 2
+ obs.: esse name 'sample-app-service' vc pega no comando 'list-services'
+ 
+ Link para os comandos CLI Ecs:
+ https://docs.aws.amazon.com/cli/latest/reference/ecs/index.html
+
+#02.04 - Usando Queries
+> Descrever os clusters: aws ecs describe-clusters
+> Descrever os clusters com querys: aws ecs describe-clusters --query "clusters[*].[clusterName,runningTasksCount]" (windows cmd é com aspas duplas)
+> Descrever os clusters com grep: aws ecs describe-clusters | grep  -i name (pode ser mais legal que a query rs!)
+> Descrever uma task: aws ecs describe-tasks --tasks 9e46815e195843af998b9f59ca613611 (tem que rodar o list-taks antes para pegar o id)
+> Descrever tasks com saídas em formato de álias: aws ecs describe-tasks --tasks 9e46815e195843af998b9f59ca613611 --query "tasks[*].{cpu:cpu,memoria:memory}" 
+
+
+Trilhando a arquitetura: [MLE] Cluster > cluster name > servives > [MI] task  > clique task name > [opção] container
+Outra forma:             [MLE] Task Definitions > clique name > clique name > [menu] > Container Definitions > container name (container que a task está associada)
+
+Nessa aula aprendemos:
+    que um serviço possui 0 ou mais tarefas
+    que o serviço automaticamente inicializa a quantidade de tarefas configuradas
+    para parar uma tarefa devemos definir o serviço com a quantidade 0 de tarefas
+    como usar aws-cli para manipular o serviço e a quantidade de tarefas
+    como usar aws-cli para executar queries
+
+###################################################
+03 Preparando nosso ambiente
+###################################################
+
+#03.01 - Criando nosso cluster ec2
+
+Criando ECS provisionado com EC2:
+[MLE] > Cluster [Button] > Create Cluster > EC2 linux + Networking >  [option] Instance configuration: 
+                                                                     - (radio) On-Demand Instance [produção - professor usou essa] ou 
+																	 - (radio) Spot [desen]                                                                              
+																	 EC2 instance type*:
+																	 - t2.micro (free)
+																	 Number of instances*																	 
+																	 - 2
+																	 Root EBS Volume Size (GiB)
+																	 - 30 (default)
+																	 Key pair
+																	[option] Networking
+																	VPC: escolher a Default (já criada)
+																	Subnets : escolher as duas (já criadas)
+																	Auto assign public IP : enable
+																	Security group: EcsContainerService-Defualt (escoher essa - segunda opção)
+																	Finish/Create
+																	--> Depois de criado o cluster, as instâncias serão criadas no dashboardo do Ec2 (confira lá: EC2 instance).
+																	Foram criadas: instâncias ec2, volumes, security group e auto scaling (todas usam no nome o prefixo: Ec2 Instance...)	
+Obs.: instância/cluster que usa Fargate, por isso não é possível acessar a instância ec2, obviamente também não é possível o acesso via ssh.
+
+A criação do Load Balancer NÃO é pré-requisito para o processo de criação do cluster. 
+O Load Balancer é um recurso extra que tem como objetivo distribuir automaticamente o tráfego de entrada dos aplicativos em várias instâncias do EC2.
+Precisa de fato de:
+Security Group;
+VPC
+Tipo de Instância (t2, m4, c3, etc)
+
+#03.O3 - Incluindo novas instâncias no cluster
+1) Via console
+[MLE] > Auto Scaling Groups > check (Ec2Container...) > edit (desired: 3 e max:3). Vá em Ec2 e vejo o provisionamento.
+
+2) Via CLI (ver doc do autoscaling na aws)
+aws autoscaling describe-auto-scaling-groups  
+
+aws autoscaling set-desired-capacity --auto-scaling-group-name EC2ContainerService-ecs-api-EcsInstanceAsg-1QL726YHMRE9L --desired-capacity 2
+Obs.: esse name a gente pega no comando anterior
+
+
+Nessa aula aprendemos:
+    como provisionar o ECS através de instâncias EC2
+    como o cluster foi definido usando Auto Scaling Groups
+    como alterar propriedades do cluster tanto no console web quanto no aws-cli
+	
+###################################################
+04 Elastic Container Registry
+###################################################
+
+#04.01 - COnhecendo Imagem docker
+Pull and run image: https://hub.docker.com/r/rmerces/api-monolitica
+
+#04.02 - Disponibilizando a Imagem ECR (Amazon Elastic Container Registry)
+Repositório ECR é privado
+Preços ECR
+https://aws.amazon.com/pt/ecr/pricing/
+
+> Fazer Push da imagem
+[MLE] ECS > Repositories > [button] create repository: define name (api-monilitica) > create
+> view push commands: check name > [MS] > view push commands
+> Executar o passo 1) logar - depois o faz o push
+                   3) push image (fazer ajuste da imagem docker add: rmerces/api-monolitica)
+> ver a imagem tagada: docker images
+> fazer o push da imagem: 4) docker push 959062935457.dkr.ecr.sa-east-1.amazonaws.com/api-monolitica:latest
+> fazer novo push: [MLE] ECS > Repositories > (radio) clickname > URI (pega essa URL para fazer o push)
+> políticas: quantas versões, qual o tempo de vida útil das images etc etc
+
+#04.03 - Ciclo de vida das imagens
+> Aplicar regra: ECR > Repositories > [api-repository-name] 'api-monolitica' > Lifecycle policy > [button] create a rule
+  Image status: [radio] tagged
+  Tag prefixes: usei a palavra 'dev' (que está na tag da imagem docker que foi realizado o push)
+  Match criteria: imagem count more than = 2 
+  Depois de aplicada a policy, a AWs demora até 24hrs para realizar a limpeza das tags
+
+Nessa aula aprendemos:
+    o que é o ECR e para que serve
+    como adicionar uma imagem no repositório do ECR
+    que cada repositório possui um URL
+    que as imagens são diferenciadas pela tag
+    que um repositório pode ter regras que definem o ciclo da vida das imagens
+
+###################################################
+05 Trabalhanco com tasks
+###################################################
+Tasks == Container
+#05.01 -  Criando nossa Task
+Fazer o deploy de uma imagem docker
+> pegar o endereço da imagem/tag > [MLE] ECR > Repositories > [clique name] api-monolitica > clique name image tag > pegar o Image URI (fazer o deploy)
+> fazer o deploy > [MLE] > Task Definitions > Create a new task definitions > [option] Ec2 > 
+                                                                                 Name: api-monolitica
+																				 Task Role: default (já criada) 
+																				 Network Mode: bridge
+																				 
+																				[Button] Add COntainer : coloca a url capturada no passo anterior
+												                                         name container;
+                                                                                         url container.
+																						 memory: soft limit 256
+																						 Port mappings : apenas do container: 3000 (host port em branco para o docke atriuir e permitir o load balance)
+																						 Obs.: aqui que se colocam os enviroment etc do docker
+																				        Add
+																				Create a task
+> Ver a task criada > [MLE] Task Definitions
+> Executar task (deploy)> [MLE] Task Definitions > [radio] clique name task > [BS] > Actions [option] Run Task > 
+																					- Launch type: ECS
+																					- Cluster: ecs-api
+                                                                                    - Number os tasks: 1
+																					Problem: no No Container Instances were found in your cluster
+																					Resolver: 2 formas: ver se o cluster foi criado como Ip Public Enable or Auto Scaling em EC2 está com desired > 0.
+> Ver task em execução [MLE] > cluster > clique name > [MI] > Tasks > clique name > cique menu esquerdo seta > external link	
+  Se pegar o link e acesso não dará certo. Tem que criar uma regra do security group no ec2.
+  Liberar firewall por meio da regra do securiy group.
+> Secuciry groups > clique name > ECS default - ECS SecurityGroup > actions >  edit inbund rules > ALL TCP > my ip address. 
+
+Obs.: até esse ponto o cluster e a task foram criados de forma manual, sem ter o service para automatizar.
+
+#05.01 -  Gerenciando Tasks pela CLI
+> Listar as tarefas: aws ecs list-tasks --cluster ecs-api2 [NAME-CLUSTER]
+> Parar task: aws ecs stop-task --task ID_TASK (recuperado no comando anterior)
+> Listar as definições de todas as taks estando ou não vinculadas a um cluster: aws ec2 list-task-definitions
+> Subir uma task: aws run-task --cluster ecs-api2 [NAME-CLUSTER] --task-definition api-monolitica:1 [TAG-NAME:VERSION]
+> Subir uma task por quantidade: aws run-task --cluster ecs-api2 [NAME-CLUSTER] --task-definition api-monolitica:1 [TAG-NAME:VERSION] --count 3  
+
+Nessa aula aprendemos:
+
+    como criar uma Task Definition separadamente
+    como adicionar uma Container Definition ao Task Definition
+    que a Task Definition já pode ser usado no cluster mesmo sem Service
+    lembrando que o Service automatiza o processo da Task Definition
+    usar a aws-cli para administrar tarefas
+
+###################################################
+06 Serviços o Maestro da Orquestra
+###################################################
+Services == automatizar as tasks
+
+#06.01 - Automatizando a app com um serviço
+Cluster > Clique name cluster > [MI] Servives > Create
+										 	   - launch type: EC2
+											   - Cluster: api-monolitica
+                                               - service name: api-monilitica						
+											   - number of tasks: 2
+Step 2 - load balance > criar um novo: Amazon EC2 console (link) -> na criação fazer menção ao que FOR EC2
+                                                                 - Load balancing : Application Load Balancer: 	
+                                                                  create a service (vários passos aqui) ou escolhe o load balance criado (api-users, api-posts, api threads)
+               		 > ver o load balance:  Ec2 : load balance : clique name : DNS name (copia e cola no browser) não vai funcionar gateway timeout 504- falta uma regra que será explicada na próxima aula.
+Obs.: Só pode excluir um serviço se o número de tarefas for 0
+Para configurar o número de tarefas como zero, basta fazer um update do serviço, seja pelo console ou pela cli.
+					 
+#06.03 - Ajustando o Security Group
+A regra deve ser quando bater no balanceador ele jogue para o cluster
+> ajustar regra do load balance não está acessando via DSN name: Ec2 dashboard > security groups > [clique] Ec2ContainerService > Edit inbound rules
+Add: All TCP : Custom: 10.0.0.0/16: [name] acesso interno (contempla para outros docker que serão criados com portas randômicas )
+                                                           Só a rede interna que é a 10 poderá acessar todas as portas.
+Para ver a rede intern que a 10 > busque por VPC
+
+> Ajustando o security group por subnet> VPC > [MLE] > Subnet (pega os ips)
+                                        Ec2 > security group > clique name > edit rule inbound > adicionar os endereços das subnets
+
+Obs.: Além de liberar o acesso à aplicação, no caso a porta 80 e/ou 443, é preciso incluir uma regra, autorizando o balanceador a se comunicar com os containers. Resumindo, liberar também todo o acesso dentro da VPC.										
+
+
+Nessa aula aprendemos:
+    como criar um service baseado no EC2 que usa a nossa Task Definition
+    como criar o loadbalancer e associar aos containers
+    como liberar o roteamento pelo Inbound Rule do Security Group
+
+
+###################################################
+07 Hora do Concerto
+###################################################
+Objetivo: preparar os repositórios e subir os microseviços como Ecs.
+
+# 07.01 - Preparando os repositórios dos microservices
+Fazer o pull das imagens docker: users, posts e threads:
+https://hub.docker.com/u/rmerces
+
+> Criar 3 repositórios para casa API (microservices): api-users, api-posts, api-threads e fazer os push das imagens docker
+
+# 07.03 Criando as tasks dos microservices
+Objetivo: Vamos criar as tasks definitions para os 3 microservices: api-users, api-posts, api-threads.
+
+>ECS [MLE] Task Definition > Creta a task definition > EC2 > passos já feitos anteriormente
+Detalhe: Só preenche: Configure task and container definitions e  Container Definitions e CREATE
+ - No momento de adicionar o container, não FIXAR A porta do host, apenas do container por conta do LOAD Balance
+ - Soft limit: 256
+ 
+> criar Task Defintions by JSON > edita uma task e copia o json e basta trocar os nomes da api e criar a partir dele (tem um json exemplo salvo na pasta labs)
+> Criar task De
+> Criar nova revisão: ECS > Task Definition Name : (api-name) api-threads > [button] > create a new revision
+> Cancelar uma revisão: ECS > Task Definition Name : (api-name) api-threads > checkbox > [button] > actions > Deregister
+
+# 07.05 Ajustando o load balance
+> Criando load balance > ec2 > load balancing > load balancers > [BS] create a new load balancer > name: api-microserviços : porta 80 > VPC (default 10.0.0.0/16) criar 3 secutiry groups (para as 3 apis)
+                               Step 3 : security group: EC2ContainerService-defatult... > next
+							   Step 4: Configure Routing: new Target Group : name: api-users > next
+							   Step 5: Register Targets : não marca nada > next and create/finish
+> Criando os grupos > ec2 > load balancing >  target group > [BSD] Create a target group: apenas dar um nome e ESCOLHER A VPC DEFAULT (10.0.0.0/16) e marcar as subnets e next/create. Tem que criar duas apenas, pois a de api-users foi criada na criação do load balance
+																				
+> Apontar os ponteiros (rotas) dos microserviços no load balance: ec2 > load balancing > check name-loadbalance > [BI] listeners > editar a regra existente: clique HTTP 80 view edit rules (ver passos abaixo)
+ Vincular os paths das apis aos target groups criados anteriormente.	
+ IF                THEN
+ /api/users       api-users
+ /api/threads     api-threads
+ /api/posts       api-posts
+
+> Create a Sevices > Cluster > clique name > [BI] Services > [button] Create (ver passo #06.01). 
+Obs.: o que difere é que nessa criação do serviço nos já criamos os target groups (passo 4 abaixo) e as regras de listeners (passo 5 abaixo)
+                                                - 
+
+# 07.07 Testes e ajustes finais
+> Testar tudo > Ec2 > Load balance > pegar o ip público > clique name > DNS Name
+
+Obs.: ECs > Tasks > running tasks está diretamente ligado a quantidade de instâncias do seu auto scale por conta da memória (Ec2 > Auto Scaling > Auto Scaling Groups : field : Desired Capacity)
+ 
+Nessa aula aprendemos:
+    como construir uma arquitetura de microserviços no ECS
+    como criar a task através do JSON
+    como fazer uma revisão da task
+    como definir regras no load balancer para forwards
+
+-------------------------------------------------------------------------------
+- COMENTÁRIOS EXTRAS
+-------------------------------------------------------------------------------
+
+PASSO A PASSO PARA TASK/TARGETGROUP/LOAD BALANCE(LISTENER) / SERVICE:
+1) push na tag docker
+2) cria a task definition
+3) run a task (testar antes de criar o serviço) - 1) Task Definitions > [checkbox] name api > actions > run task. Vai em cluster [MI] -> task para pegar o ip (External Link). Não vai funcionar, e tem que ir no security group ajustar a regra para my ip (teste apenas)
+                                                  2) Pode rodar pelo cluster. Clusters > clique name cluster > [MI] task > [button] > run new task																									
+> Cluster > Tasks > Field Started By: indica se tem serviço associado ou não					
+Obs.:Mesmo estando associada a um serviço, você tem a opção de iniciar uma task manualmente, a fim de, por exemplo, efetuar um teste.
+4)criar o target group
+5) criar as regras de 'listeners' (redirect)
+6) criar os 'serviços' e fazer as amarações (task definitions com target group)	
+
+Problema na hora de criar os serviços: Reasons : ["RESOURCE:MEMORY"] aws. SOlução: 1) criar nova revisão da task definition com menas memória. (fiz essa aqui: fiz uma nova revisão da task definições, apaguei o serviço criado e inclui um novo apontando para nova revisão)
+                                                                                   2) fazer um increase de memória na instância Ec2 (não consegui)
+																				   Detalhe para ver o problema e memória: (ECS > Cluster > Service > Events).
+																				   3) Dar um stop em alguma instância (ex.: api-monilitica)
+																				   

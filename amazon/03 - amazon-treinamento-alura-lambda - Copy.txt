@@ -1,0 +1,200 @@
+###########################
+# 01 Servless na AWS
+###########################
+
+Vantagens do sevless:
+01) não se preocupar com servidor
+02) escalar o serviço servless com outros de maneira muito fácil
+03) a disponibildiade é altíssima
+
+A cobrança é por vezes que a função/código será executado. É mais barato que o Ec2
+O servless você não se preocupa com gerenciamento de instâncias, disco, configurações etc etc. Mesmo que os preços sejam os mesmos (ec2, ecs e lambda), tem que ser
+levado em consideração esses pontos.
+
+Link para preço: https://aws.amazon.com/pt/lambda/pricing/
+
+Programa a FUNÇÃO (define: memória e tempo de execuçãO) e vincula a um SERVIÇO.
+Precisamos definir o quanto de 	MEMÓRIA nossa função necessita. Atualmente, o mínimo é de 128MB.
+É preciso de um tempo máximo para nossa função ser executada. Caso ela não seja concluída dentro deste tempo, a mesma é encerrada!
+
+#01.04 - Hello World
+
+LAMBDA > create a function > [Options - Dashboard]
+                             - 'Author from scratch' - cria do zero - configura tudo
+							 - 'Blueprints' - já tem algumas funções pré programadas por contexto e linguagem
+							 - 'Serverless Application Repository' - repositório - faz o deploy para nós
+							 > Name:
+							 > Runtime: LINGUAGEM
+							 > Execution role: Create a new role from AWS policy templates: HelloWorld
+							 * Create a function
+Para executar a função tem que criar um TESTE (que é uma espécie de gatilho/trigger)
+> Clique Function Name or 'Check Radio:Action View Details' > [Option] Test > Select Teste Name Combo > [Button] Test >  Details : Resultado do test > Campo Billed Duration: 1 ms é que servirá de base para cobrança.
+Duration: 0.98 ms
+Billed duration :1 ms
+Resources configured: 128 MB
+Max memory used: 51 MB
+> [Option] Configuration > General configuration : Memomy (MB) e Timeout (s) -> default é 3s.
+> [Option] Monitor > Verifica a qtd de execuções, de memória consumida, tempo de execução
+
+###########################
+# 02 Entrada e Saída
+###########################
+Quando se cria uma Function, por padrão o cloudwatch fica monitorando ela.
+CloudWatch > obter as métricas de execução das funções
+
+> Ver os logs> CloudWatch > [MLE] Logs: Los groups > clique function name > clicar no log listado
+> Criar um evento (trigger) > Lambda > Function Overview > button > + Add trigger > Event Bridge (Cloud Watch Events) (rodar de tempos em tempos)
+                                                                   - Create a new rule or Existing rules (se já tiver criada)
+																   - name: evento-agendamento-hello-world
+																   - Radio: schedule expression
+Event Bridge (Cloud Watch Events) -> como se um fosse um CRON do linux
+ 
+ > Criar evento pelo cloud watch: CloudWatch > [MLE] Events > Rules > Create a Rule > Schedule > Definir o CRON > Add Target (function LAMBDA) > next > Name > Create a Rule
+ Obs.: sempre tem que fazer o agendamento com o horário UTC (ver o horário atual +3hrs que chega no UTC). Ex.: agora é 11:30 -> UTC: 14:30.
+ Cron reference AWS: https://docs.aws.amazon.com/pt_br/lambda/latest/dg/services-cloudwatchevents-expressions.html
+ 
+ Min:Hor:DiaMês:Mês:DiaSemana:Ano
+ Ex.: 0 8 * * ? *
+ 
+#02.03 - Criando um Trigger
+
+> Destivar um trigger (rule): Amazon EventBridge > Events >Rules > CliqueName > Disabled
+> Deletar um trigger (rule): Lambda > Function > EventBridge (CloudWatch Events) > CheckBox CliqueName > Delete
+
+---->> Criar um bucket no S3 para armazenar um arquivo e disparar uma function.
+> Criar Bucket> S3 > Criar bucket > definir name > next/create.
+> Criar triger a partir do s3: Lambda > Function Overview > button > + Add trigger > S3
+																					- [option] - Bucket
+																					- Event type - All object creates events (quando um arquivo for criado no bucket)
+																					- Filter (profesor mostrou apenas para arquivos .png) -> não tinha na versão que fiz - O campo no meu é Suffix (abaixo)
+																					- Suffix - optional : Ex.: .png
+																					- Create/finish trigger.
+Quando inputar um arquivo a function vai ser disparada e um evento de log criado (ver em cloud watch)
+
+###################################
+# 03 Construindo nossa aplicação
+###################################
+Lib para o reconhecimento facial: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html
+
+> Fazer sync das imagens para o bucket via CLI, entrar no diretórias das imagens via terminal e rodar: aws s3 sync . s3://fa-images1 <BUCKET-NAME>
+
+Problema ao rodar client.py:  The collection id: faces does not exist
+> Solução do fórum: no cmd rodar: aws rekognition create-collection --collection-id "faces"
+
+> Listar collections do rekognition: aws rekognition list-collections
+
+> Listar o conteúdo da collection: aws rekognition list-faces --collection-id faces <COLLECTION-NAME>
+
+> Listar o apenas o nome das images indexadas da collection: aws rekognition list-faces --collection-id faces | grep ExternalImageId
+
+
+
+
+###################################
+# 04 Análise de faces
+###################################
+Foi criado o python: facesanalise.py
+
+No AWS Console:
+Referencar função lambda: nome do arquivo + nome da função. Ex.: lambda_function.lambda_handler (Na aula no professor, tinha um combobox com esse caminho - na minha tela no dia do curso não tinha)
+
+É importante observar como devemos chamar a função dentro do ambiente do AWS Lambda. Para a configuração do campo Handler, deve ser o padrão: filename.funcao
+
+> Copiar/upload de imagem para o bucket(s3): aws s3 cp _analise.jpg <FILE-NAME> s3://fa-images2 <BUCKET-NAME>
+
+> Listar o apenas o nome das images indexadas da collection: aws rekognition list-faces --collection-id faces | grep ExternalImageId
+
+###################################
+# 05 Comparando images
+###################################
+Foi dado continuidade as funções do python: facesanalise.py
+
+###################################
+# 06 Front-End Aplicação
+###################################
+
+>Criar um bucket: S3 > create a bucket: fa-site2 > save. Edit > properties> [Static website hosting] : Edit . Enable : index.html
+                                                                permission > habilita modo publico: Block all public access: false > pega o json no link abaixo: edita o nome do BUCKet 'fa-site2' > save 
+																https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteAccessPermissionsReqd.html
+> Acessar o bucket: S3 > clique bucket name > properties> Static website hosting : copy link 'Bucket website endpoint' e faz o acesso para testar	
+
+> Subir o fa-site (arquivp baixado da aula 01) e decompactado: entre na pasta do site e execute via terminal: aws s3 sync . s3://fa-site2															
+
+> Acessar site: S3 > clique bckuet name > properties> Static website hosting : copy link 'Bucket website endpoint' e faz o acesso para testar	
+
+> Fazer push dos dados.json> executar função do faceanalise.py : método: publica_dados
+
+> Permitir CORS no fa-site: permissions: Cross-origin resource sharing (CORS)
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "POST",
+            "GET",
+            "PUT"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ]
+    }
+]
+Link reference to JSON
+https://stackoverflow.com/questions/64842173/in-s3-bucket-cors-configrations-not-allowing-xml-and-asking-for-json-instead
+
+
+> Autorizando requisições rest para o bucket fa-images2, o fa-site2 já está public. > Block public access (bucket settings) : allow all > save
+                                                                                    > Copiar o json de exemplo do link abaixo > Edit bucket policy > fazer os ajustes da url e bucket name no json > salvar
+
+Link para bucket policy: Sesion: 'Granting read-only permission to an anonymous user':
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html
+
+Mínimo permissão necessária no bucket: getObject
+
+###################################
+# 07 Ambiente de Produção
+###################################
+Toda função lambda python deve ter como parâmetro (event, context)
+
+> Subir as funções lambda para o aws: 1)fazer um zip do arquivo .py
+                                      2) aws lambda update-function-code --function-name faceAnalise --zip-file fileb://faceanalise.zip -> Reference to update function: https://docs.aws.amazon.com/cli/latest/reference/lambda/update-function-code.html
+
+Obs.: no momento de subir o .zip, se tiver alguma lib que nao tenha no pacote do python, vc terá que zipá-la e subir também.
+
+> Editar o runtime settings: Lambda > Functions > Clique name Function > [MI] : Runtime settings > Edit : faceanalise.main > Save	
+
+> Concecer acesso para no python se comunique com o rekognition. AccessDeniedException. Deverá ser na policy: IAM e bucket (ver próximo passo)
+
+#07.05
+> Conceder acesso a function a rekognition e bucket: IAM > clique role name> permissions > [button] Attach policies > search/check 1) 'AmazonRekognitionFullAccess' > attach policy
+                                                                                                                                   2) 'AmazonS3FullAccess' > attach policy
+> Run function test e vejo o consumo:
+Duration
+1054.83 ms
+Billed duration (USADO)
+1055 ms
+Resources configured
+128 MB
+Max memory used (USADO)
+84 MB
+
+> Adicionar um evento para a lambda ser evecutada: 1) Amazon Event Bridge > Events > Rules > create
+                                                   2) Lambda  function > clique function name > add a trigger > S3 > Bucket Name 'fa-images2' > Event type: All object create events> Suffix - optional: '_analise.jpg' > checkbox > ADD
+> Desativar evento já criado: S3 > clique bucket name > properties > Event notifications
+
+###################################
+# 08 Testes e versionamento
+###################################
+
+> Publicar versão: aws lambda publish-version --function-name faceAnalise <FUNCTION-NAME>
+> Para ver a versão: Lambda > Function > clique function name > 'Versions'
+> Criar alias para versão da função: aws lambda create-alias --function-name faceAnalise --function-version 1 --name PROD
+COmo criou um alias, o evento trigger nao foi criado para ela, tem que apagar o evento do buclet s3 e criar um novo apontadno para o alis PROD.
+É possível apontar um trigger para o alias, mesmo que este não corresponda à última versão publicada (LATEST).
+Alternativa correta! Esta é uma prática muito interessante. Imagine o seguinte cenário: você aponta o trigger para um alias PROD e a partir daí, mesmo você publicando uma nova versão da sua aplicação, o ambiente de produção não é alterado.
+
+
+Git: faceanalise (já dei o fork)
+Link da aplicação do site estático: http://fa-site2.s3-website-us-east-1.amazonaws.com/
+Lambda functuon CLI reference: https://docs.aws.amazon.com/cli/latest/reference/lambda/index.html

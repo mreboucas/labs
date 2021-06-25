@@ -1,0 +1,44 @@
+{
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "containerDefinitions": [
+        {
+            "name": "api-threads",
+            "image": "959062935457.dkr.ecr.sa-east-1.amazonaws.com/api-threads:latest",
+            "memoryReservation": "256",
+            "resourceRequirements": null,
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": "3000",
+                    "protocol": "tcp"
+                }
+            ],
+            "environment": null,
+            "environmentFiles": [],
+            "secrets": null,
+            "mountPoints": null,
+            "volumesFrom": null,
+            "hostname": null,
+            "user": null,
+            "workingDirectory": null,
+            "extraHosts": null,
+            "logConfiguration": null,
+            "ulimits": null,
+            "dockerLabels": null,
+            "dependsOn": null,
+            "repositoryCredentials": {
+                "credentialsParameter": ""
+            }
+        }
+    ],
+    "volumes": [],
+    "networkMode": "bridge",
+    "memory": null,
+    "cpu": null,
+    "placementConstraints": [],
+    "family": "api-threads",
+    "taskRoleArn": "arn:aws:iam::959062935457:role/ecsTaskExecutionRole",
+    "tags": []
+}

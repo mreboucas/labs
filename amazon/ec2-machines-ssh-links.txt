@@ -1,0 +1,25 @@
+segunda-ec2:
+ssh -i "aws-marcelo.pem" ec2-user@ec2-52-67-137-49.sa-east-1.compute.amazonaws.com
+
+primeira-ec2:
+ssh -i "aws-marcelo.pem" ec2-user@ec2-18-228-170-117.sa-east-1.compute.amazonaws.com
+
+web-dev (apache / mariadb)
+ssh -i "aws-marcelo.pem" ec2-user@ec2-18-230-108-95.sa-east-1.compute.amazonaws.com
+
+ver processos: netstat -ltun
+validar alteração do usuário: ls -l /var (ver o usuário ec2-user:apache -> www)
+
+web-dev1 (apache / mariadb) - criada a partir de uma imagem
+ssh -i "aws-marcelo.pem" root@ec2-54-232-87-86.sa-east-1.compute.amazonaws.com -> tem que trocar o nome do usuário para: ec2-user
+
+
+RDS link:
+database-1.cccj9t8d5fvi.sa-east-1.rds.amazonaws.com
+
+PRINCING EBS:
+https://aws.amazon.com/pt/ebs/pricing/
+
+AWS CALCULATOR:
+https://calculator.aws/#/createCalculator/EC2
+
