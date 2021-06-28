@@ -33,3 +33,220 @@ Obs.: quando se adiciona a policy ao grupo, por padrão os usuário desse recebe
 Detalhe: eu estou usando o usário criado no curso do EC2, daí ao adicionar um usuário vc deve fazer download das credenciais (new_user_credencials.csv), vc não acessará mais pelo site.
 
 Gerei a chave em Ec2 e no curso de lambda fiz a troca de região para o norte de virgínia, via aws configure. (está no arquivo essa troca)
+
+# AWS SQS Cli 
+
+> Veros comandos do sqs: aws sqs help
+
+> Listar queues> aws sqs list-queues
+
+> Eviar mensagem: sqs send-message. Ex.:  aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/959062935457/alura-test --message-body "Olá viva o mundo"
+'queue-url' e 'message-body' são obeigatórios
+
+> Help específico do send-message: aws sqs send-message help (para ver os parâmetros necessários para envio da msg)
+Obs.: os campos sem os colchetes são não obrigatórios. 
+Ex.:  aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/959062935457/alura-test --message-body "Olá viva o mundo"
+
+> Receber mensagem: aws sqs receive-message --queue-url  https://sqs.us-east-1.amazonaws.com/959062935457/alura-test <URL-FILA>
+Esse comando vai retornar um json, e o atributo 'body' é o corpo da mensagem.
+
+aws sqs delete-queue help
+> Deletar uma msg da fila: aws sqs delete-queue --queue-url <URL-FILA>
+   --queue-url <value> - obrigatório
+ Para pegar a url da fila: aws sqs --list-queues
+
+> Criar uma fila aws: aws sqs create-queue help (em Synopsis - vc ver os campos obrigatórios)
+campos obrigatórios:
+   --queue-name <value>
+aws sqs create-queue --queue-name TESTE
+
+
+
+Nesta aula, aprendemos:
+    Com o SQS, podemos conectar o nosso ambiente de desenvolvimento local (ou servidores On-Premise) na nuvem, fornecendo as chaves de acesso com 
+		as devidas permissões, através do comando aws configure.
+    Operamos nossa fila SQS com os comandos aws sqs create-queue para criar filas, aws sqs delete-queue para excluir uma fila, aws sqs send-message
+		para enviar uma mensagem e aws sqs receive-message para receber as mensagens previamente enviadas.
+    Navegamos, também, na documentação do aws-cli através do comando aws sqs help, que é de grande valia quando esquecemos algum parâmetro ou queremos 
+		entender o funcionamento de uma determinada API.
+
+
+##############################################
+# 03 Processamento de mensagens
+##############################################
+Excluir as mensagens já processadas( mensagens já lidas por algum client)
+
+> Enviar uma msg: aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/959062935457/alura-test --message-body "Ola mundo" 
+> Receber a msg: aws sqs receive-message --queue-url  https://sqs.us-east-1.amazonaws.com/959062935457/alura-test
+Ao receber, vamos trabalhar com o campo: 'ReceiptHandle'
+
+> help para apagar msg do sqs: aws  sqs delete-message help
+Campor obrigatórios:
+ --queue-url <value>
+ --receipt-handle <value> 
+ 
+ > Excluir uma msg: aws  sqs delete-message --queue-url https://sqs.us-east-1.amazonaws.com/959062935457/alura-test --receipt-handle AQEBdepTYf4bQf+/IjSCm/hghuYmNJ69t24ytKp09A41mOAlW/9DdNvRyMePpIcpR2OIiYUPsd8KdpyURIdtqOxWVOS2zO5BF9wZMI5yn6QnovwTXO4bW6YLJoYrvyXz/mk/XsSE+/b9/xKrAAOR+94FDvVkPCC2pbnjaRfw7HOHqxWpYSqkBIOaczG4cGI/nzGGTFFJj+URgdxN6JRzaWKpuHOZ3fqYTzd3RDPPehKJ5XTkId3l7fQGPE5j5cyF1wnbuRDdiHaO0qNz30e6d4uyPYl4Q+q4Q7ABGjTycMad/kkTx5aRsL84L6qu23tIJpbpLBgdk/syuVqaEcnLlJ6lsyZEYXlR1grcAr1clgug72DaKvxg0ovauBkHNzXogySkD9cQMzZldRlW3uIo3uR43Q==
+ --receipt-handle -> vc consegue ele no 'receive-message'
+ 
+ ESTÁGIOS do recebimento de uma msg SQS:
+ 1) recebe a mensagem - uma chamada interna de receiver message
+ 2) aplicação processa a mensagem (no caso do 1º exemplo do curso é a leitura da mensagem -> body)
+  Temos dizer para o sqs o tempo de processamento de uma msg
+ 3) exclui a mensagem
+ 
+ Se receber uma mensagem mais de uma vez, na listagem das filas, ela aparecerá como mensagem em voo : 'messages in flight' (sendo processada - invisível para outros clientes/aplicações)
+ 
+> Limite de visibilidade de uma mensagem: Amazon SQS > Queues > alura-test > Edit > Option 'Configuration' : Visibility timeout Info (0 até 12h). Após esse tempo a mensagem retorna para a fila de processamento.
+Esse tempo deve ser um pouco maior que o tempo de consumo da mensagem, pois senão ela sumirá antes do processamento.
+O tempo adequado do visibility deve comportar os tempos das etapas: Recebimento + Processamento + Exclusão
+Esse tempo faz com que não haja o processamento incorreto da sua mensagem por outra aplicação, fazendo o processamento único e correto
+
+> Valores: será cobrado por recebimentos (receive-message), envio (send-message) ou quaquer outra chamada
+1 milhão de requisições gratuitas para o SQS (0800 / free)
+
+# 03.03 Short Polling vs Long polling.
+
+> Short polling: a aplicação fica fazendo chamadas indiscrimiadas até a mensagem retornar, depois de transcorridos o tempo de timeout. Mesmo que não retorne nada, está sendo tolalizado por cada chamada.
+
+Preço SQS: https://aws.amazon.com/pt/sqs/pricing/
+$0,40 por cada milhão de requisição	
+
+> Long polling: (BOA PRÁTICA USAR ESSE PARÂMETRO) é o contrário do short polling, pois ele cria uma conexão que checa até encontrar uma mensagem nova ou até atingir o limite por meio do campo: --wait-time-seconds
+Ex.: aws sqs receive-message --queue-url  https://sqs.us-east-1.amazonaws.com/959062935457/alura-test --wait-time-seconds 20
+Sem esse tempo de wait-time-seconds definido, o sqs já teria feito 19 chamadas sem necessidade que seriam cobradas.
+Tem um parâmetro para definir a qtd de mensagens recebidas: --max-number-of-messages (boa prática definir 10)
+
+DETALHE: Long polling ajuda a diminuir os custos, porque abre uma conexão que só é finalizada quando existem novas mensagens ou quando o tempo limite é atingido, 
+diminuindo, assim, a quantidade de chamadas de API executadas em vão. Uma vez processadas, as mensagens devem ser excluídas imediatamente, para evitar que elas voltem a ficar disponíveis nas filas e serem, eventualmente, reprocessadas. 
+
+
+
+Nesta aula, aprendemos:
+
+    A processar mensagens de forma segura e eficaz. Abordamos o visibility timeout, que é o tempo que uma mensagem fica invisível para potenciais consumidores, também conhecido como tempo de processamento. O visibility timeout depende de caso a caso e deve ser analisado, com cuidado, pelos times que operam a fila.
+    Que devemos sempre excluir as mensagens que já foram processadas, a fim de evitar duplicidade no processamento. É possível excluir mensagens através do comando aws sqs delete-message, informando a URL da fila e o parâmetro ReceiptHandle.
+    Como o fator custo é muito importante em aplicações na nuvem, olhamos para o conceito de short polling (busca frequente de mensagens), comparamos-o com o long polling (busca infrequente de mensagens) e vimos que podemos economizar muitos recursos quando o long polling é utilizado corretamente.
+
+##############################################
+# 04 Tratamento de erros
+##############################################
+
+> Poison Message: mensagem envenenada, ela não tem o formato adequado. Ela é recebida, mas o sqs não sabe processá-la e fica voltando infinitamente para a fila.
+
+> DLQs - Dead Letter Queues
+
+Existe um contator nas msgs, uma vez que ele seja atingido em decorrência do seu não processamento, essa msg será encaminhada ao DLQ
+A DLQ é uma fila como as outras, a boa prática manter um sufixo que indentifique-as: alura-test-dlq
+
+> Criar uma fila DLQ: alura-test-dlq
+> Editar a fila padrão e vincular a DLQ: Amazon SQS > Queues > alura-test > Edit > 'Dead-letter queue - Optional' > Enabled > vincule a alura-test-dlq | Maximum receives = 3 (a msg só pode ser recebida por essa fila 3 vezes) > Save
+																					Diminuir o Visibility timeout para 10s		
+> Envar uma msg olá para fila alura-test > vá em: Amazon SQS > Queues > alura-test > Send and receive messages > faça um Poll for messages 4x (lembra que colocamos o limite de 3x acima para ela ir para o DLQ). NEsse momento a msg saiu da DLQ alura-test e foi para alura-test-dlq																		
+
+DLQs servem: reprocessamento e evitar que mensagens envenenadas sejam infinitamente reprocessadas por nossas aplicações.
+
+Dica: A criação de uma fila DLQ para cada fila regular. Após o número máximo de tentativas de processamento de uma mensagem ser esgotado, a mensagem deve ser direcionada para a DLQ. As filas DLQ devem possuir consumidores que alertam o time responsável quando novas mensagens forem detectadas
+
+Nesta aula, aprendemos:
+    Poison messages podem causar grandes problemas quando não tratadas com o devido cuidado.
+    Imprevistos acontecem e bugs podem ser inseridos a qualquer momento: a troca de assinatura de uma mensagem, a indisponibilidade de sistemas de terceiros ou simplesmente a falha de comunicação entre times pode fazer com que mensagens sejam processadas indefinidamente, caso não possuam uma boa estratégia de tratamento de erros.
+    DLQs são essenciais em qualquer aplicação, pois, com elas, garante-se que, em casos infortúnios, as mensagens sejam direcionadas para um canal específico, em que tanto humanos (processo manual) quanto máquinas (processo automatizado) possam decidir o que fazer com mensagens improcessáveis.
+    Para encaminhar mensagens para DLQs, devemos, primeiro, analisar qual a tolerância de falha de uma determinada mensagem. Para a maioria dos sistemas, 3 tentativas é um bom número, mas isto é algo que somente o time responsável pela fila deve decidir, pois os requisitos são os mais diversos em diferentes tipos de sistemas.
+	
+##############################################
+# 05 Ordem das mensagens
+##############################################
+SQS Padrão é um sistema autamente distribuído, que não tem ordenação no envio das mensagens e pode haver duplicidade no envio. Como tratar isso: FIFO
+
+FIFO: se a msg chegar em até 5min será garantida a não duplicidade, passando disso poderá haver alguma duplicação.
+
+FILA SQS PADRÃO
+- Taxa de transferência ilimitada;
+- Entrega pelo menos uma vez (ocorre duplicidade)
+- Melhor ordenação (ordenação não é garantida em volumes mais expressivos)
+
+FILA SQS FIFO
+- Alta taxa de transferência (3 mil msgs por segundo. Era 300 no passado)
+- Processa exatamente uma vez (não há duplicidade)
+- Entrega FIFO
+
+Dica: existe a deduplicação baseada também em ordenação, mas vamos usar no curso a baseada no conteúdo (Content-based deduplication).
+> Criar uma fila: SQS FIfo > create Queue > Fifo (requer o sufixo .fifo) > 'Configuration' check: Content-based deduplication > create Queue
+Content-based deduplication (garante a idempotência pelo conteúdo) - O SQS remove as mensagens duplicadas – quando enviadas em um intervalo de 300 segundos (5min)
+
+> Enviar mensagem: Amazon SQS > Queues > alura-test.fifo > Send and receive messages: - Message body: mesnagem
+                                                                                      - Message group ID (sevirá para ordenação das msgs - grupos como os do kafka)
+																					  - Message deduplication ID - Optional
+																					  Send messagem (envia 2 vezes)
+																					  Ao fazer o poll vc verá que a fila fifo não tem 2 msgs, isso por conta do check Content-based deduplication configurado na fila
+																					  Msgs enviadas com o mesmo body dentro do limite de 5 min, não serao duplicadas na fila SQS
+																					  - Enviar uma nova mensagem ao mesma fila/grupo com o body: mensagem diferetente
+																					  - ao poll message veremos a segunda msg
+
+Nesta aula, aprendemos:
+    Filas FIFO garantem a ordem de mensagens que possuem o mesmo MessageGroupId.
+    É possível remover mensagens duplicadas – quando enviadas em um intervalo de 300 segundos – ao definir o parâmetro ContentBasedDeduplication como true.
+    Filas FIFO são importantes em cenários onde a ordem das mensagens é importante. Exemplos reais incluem: estoque, transações financeiras, processamento de logs etc.
+    Filas FIFO devem, obrigatoriamente, possuir o sufixo .fifo em sua nomenclatura. A falta deste sufixo impossibilita a criação de filas do tipo FIFO.
+
+##############################################
+# 06 Vários comsumidores
+##############################################
+O professor abordou um cenário em que citou que dividir as filas em domínios distintos, por exe.: fila-auditoria e fila-financeiro não é uma BOA ABORDAGEM.
+1)Toda vez, seguindo esse cenário abordado, que precisa de uma nova fila terá que alterar os  sistemas de origem e destino.
+2) Cada requisição a uma fila SQS demore em média 70ms, se vc tem dez filas, o tempo das requisições seria 700ms, dessa forma onerando bastante quem está fazendo a chamada
+SOLUÇÃO:
+Tópico SNS (Amazon Simple Notifiction Service): vc enviar uma msg ao tópico, e ele se engarrega de notificar/enviar para as filas. Nesse cenário, nossa aplicação conheceria apenas o tópico.
+Num tópico SNS, vc poderá plugar endpoints e filas SQS.
+
+lINK DOC PARA CRIAR TÓPICO:
+https://docs.aws.amazon.com/pt_br/sns/latest/dg/sns-create-topic.html
+
+Tópicos são um importante mecanismo quando falamos de mensagerias. Comumente, várias aplicações se interessam em um determinado evento, como, 
+por exemplo, o evento de “Compra Efetuada” em um E-Commerce. Para simplificar a arquitetura, o Producer precisa conhecer somente o tópico para qual 
+deve enviar 'mensagens' e o 'mesmo' se encarregará de distribuí-la 'igualmente para todos os inscritos'. Aplicações, à medida que são criadas ou passam a ter interesse em um determinado evento, precisam, somente, inscrever-se ao tópico. O tópico nativo da AWS chama-se SNS.
+
+Nesta aula, aprendemos:
+    Tópicos desacoplam as inscrições (subscriptions) dos produtores de mensagem (Producers), sendo a única dependência que as aplicações precisam ter o conhecimento.
+    Arquiteturas orientadas e eventos utilizam tópicos agressivamente, pois a funcionalidade de fan-out se aplica constantemente em sistemas de grande demanda.
+    O tópico nativo da AWS chama-se SNS.
+    No SNS, os tipos de inscrições disponíveis são, entre outros: endpoints HTTP, filas SQS e números para envio de SMS.
+
+##############################################
+# 06 Vários comsumidores
+##############################################
+Link do projeto node para essa aula: https://github.com/alura-cursos/sqs-1914/archive/master.zip
+
+> Editar o visibility timeout da fila alura-test para 3ms. Excedeu esse tempo, a msg vai para a fila de dead-letter
+Amazon SQS > Queues > alura-test > Edit > Visibility timeout: 3 : save
+
+FILAs SQS só entendem o formato string.
+
+Testar com o projeto:
+npm install
+node ./send-message.js
+node ./receive-messages.js
+
+node ./send-poison-message.js
+node ./receive-messages.js (depois 3x de tentar receber, a msg vai para o tópido de dlq)
+node ./receive-dlq-messages.js
+
+No projeto em NODE:
+Quando definimos o parâmetro WaitTimeSeconds com um valor maior que zero, significa que a estratégia de Long Polling está sendo utilizada. 
+Após o processamento com sucesso da mensagem, a mesma é excluída. Caso a mensagem não seja um JSON, o código é direcionado para o fluxo de erro, 
+onde a causa da falha é impressa.
+
+
+
+Nesta aula, aprendemos:
+
+    A enviar, processar e excluir mensagens utilizando a aws-sdk para Node.js.
+    Utilizar long polling para receber mensagens através da aws-sdk.
+    Que a aws-sdk está disponível em várias linguagens de programação. A lista completa pode ser encontrada no site da AWS (link abaixo).
+https://aws.amazon.com/pt/tools/
+
+#####################################
+EXTRA  - Links para SQS + Java Spring:
+#####################################
+https://aws.amazon.com/pt/blogs/developer/using-amazon-sqs-with-spring-boot-and-spring-jms/
+https://medium.com/equals-lab/construindo-um-servi%C3%A7o-utilizando-spring-boot-aws-sqs-750a2cb5ab4c
