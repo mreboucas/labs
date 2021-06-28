@@ -45,7 +45,8 @@
  DEFAULT partitions = 1 e replication-factor = 1
  Obs.: na versão do KAFKA a partir da versão 2.2 não é obrigatório mencionar --partitions e replication-factor (o kafka coloca 1 como default para ambos)
  Obs2.: replication-factor tem que ser <= BROKERS_NUMERS (senão como ele vai replicar se não existe broker para realizar as replicações)
- Obs3.: sobre a criação do tópico --> WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. To avoid issues it is best to use either, but not both.
+ Obs3.: sobre a criação do tópico --> WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. 
+ To avoid issues it is best to use either, but not both. Use vírgula ou ponto.
 Created topic first_topic.
 
  
