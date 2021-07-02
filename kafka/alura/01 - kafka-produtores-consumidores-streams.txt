@@ -1,0 +1,155 @@
+Link do fonte do curso:
+https://github.com/alura-cursos/kafka-introducao-e-microservicos
+
+####################################
+# 01 - Produtos e COnsumidores
+####################################
+Produtores: NewOrder
+COnsumidores: FraudDetectorService
+
+#############################################
+# 02 - Paralelizando tarefas em um serviço
+#############################################
+Criou uma classe consumidora que gerencia todos os logs de todos os tópicos por regex.
+
+Produtores: NewOrder
+COnsumidores: FraudDetectorService, EmailService e LogService
+
+Grupos de consumo: faz com que cada consumidor tenha acesso/consuma todas as mensagens. Quando é um mesmo grupo para consumidores, as mensagens serão divididas e 
+disparadas de forma parcial para cada um.
+
+> Partições: faz com que paralelizemos o processamento das mensagens. Ex.:
+	-> 1Partição -> envia para 1 consumidor
+	-> 2 Partições -> envia para 2 consumidores
+	-> assim por diante
+Em outras palavras, cada consumidor se responsabila por uma partição.
+Qtd de consumidores tem que ser igual ao número de partições, caso contrário algum consumidor ficará sem partição assinada.
+
+O defaulf do kafka de partições é 1, mas pode ser alterado em server.properties: num.partitions
+
+Se o tópico tiver 3 partições e for ligado apenas um consumidor ele se responsabilizará pelas 3 particições, caso suba outras instâncias de consumidor, as partições
+serão balanceadas entre os consumidores.
+1º cenário
+C1 - 3P (p0,p1,p3)
+2º cenário
+C1 - 2P (p0, p1)
+C2 - 1p (p2) 
+
+Exemplo do log quando sobe o consumidor, avisando qual partição ele está alocado. 
+
+Nesse caso eu subi três consumidores:
+[Consumer clientId=consumer-FraudDetectorService, groupId=FraudDetectorService] Adding newly assigned partitions: ECOMMERCE_NEW_ORDER-1
+[Consumer clientId=consumer-FraudDetectorService-1, groupId=FraudDetectorService] Adding newly assigned partitions: ECOMMERCE_NEW_ORDER-2
+[Consumer clientId=consumer-FraudDetectorService-2, groupId=FraudDetectorService] Adding newly assigned partitions: ECOMMERCE_NEW_ORDER-0
+
+Nesse caso eu subi um consumidore:
+[Consumer clientId=consumer-FraudDetectorService-1, groupId=FraudDetectorService] Notifying assignor about the new Assignment(partitions=[ECOMMERCE_NEW_ORDER-0, ECOMMERCE_NEW_ORDER-1, ECOMMERCE_NEW_ORDER-2])
+
+## 02.03 - Paralelizando e a importância das keys
+> A Chave da mensagem é que dita para que partição o kafka irá colocar a msg. Exe.: seria o campo value:
+
+var key = UUID.randomUUID().toString();
+var value = key + ",67523,78923456";
+var record = new ProducerRecord<String, String>("ECOMMERCE_NEW_ORDER",value, value);
+
+A chave randômica permite as msgs serem enviadas para todas as partições do tópico. Se for chave fixa, apenas uma partição vai receber as msgs.
+
+DICA: nº de partiçoes sempre >= consumidores. Evita consumidores ficarem useless.
+
+Analisar os groups de consumo por tópico:
+kafka-consumer-groups --bootstrap-server localhost:9092 --all-groups --describe
+
+1) Output quando se tem consumer plugado no tópico:
+GROUP                   TOPIC                PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                  HOST            CLIENT-ID    
+FraudDetectorService    ECOMMERCE_NEW_ORDER  0          32               32               0               consumer-EmailService-1-1b1dc4b2-ac41-4cca-83c3-761415650adf /192.168.0.123  consumer-EmailServi
+
+2) Output quando NÃO se tem consumer plugado: 
+GROUP                TOPIC               PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
+FraudDetectorService ECOMMERCE_NEW_ORDER 2          6               7               1               -               -               -
+
+Esses campos: CONSUMER-ID     HOST            CLIENT-ID -> referentes ao CONSUMIDOR - estão todos em branco
+
+$$$ Explicação entre tópicos, partições e grupos
+
+TÓPICO > TEM 'N' PARTIÇÕES > que TEM 'N' CONSUMIDORES > cada consumidor tem um GRUPO ESPECÍFICO (para receber todas as mensagens)
+
+Tópico 1 -> tem duas mensagens:
+MSG1 (P1)
+MSG2 (P2)
+
+Se tem dois consumidores plugados no tópico pelo "mesmo grupo":
+o KAFKA VAI DIVIDIR AS MSG POR algorítimo interno entre os consumidores
+C1 (grupo1) -> provavelmnte vai receber MSG1
+C2 (grupo1) -> provavelmnte vai receber MSG2
+
+Se tem dois consumidores plugados no tópico por "grupos diferentes":
+o KAFKA VAI DIVIDIR AS MSG POR algorítimo interno entre os consumidores
+C1 (grupo1) -> vai receber MSG1 e MSG2 
+C2 (grupo2) -> vai receber MSG1 e MSG2
+
+## 02.04 - Max poll e dando mais chances para auto commit
+
+PROBLEMA: processar muitas mensagens sem dar commit e ter que entrar ou sair algum cosumidor nesse tempo, daí o kafka fará o rebalanceamento e o controle do que foi processado ao tentar ser comitado não será possível. Acarreta reprocessamento, obviamnte duplicações.
+Classes para rodar: Neworder (for de 100).
+                    FraudDetectorService
+					FraudDetectorService-1 (roda no meio do processamento)
+SAÍDA: properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+A cada msg processada o kafka fará o commit da mesma.
+
+Qual a importância das chaves na paralelização de tarefas?
+A chave é usada para distribuir a mensagem entre as partições existentes e consequentemente entre as instâncias de um serviço dentro de um consumer group.
+
+O que aprendemos nessa aula:
+    Como rodar diversos consumidores no mesmo grupo
+    Como paralelizar tarefas
+    A importância da chave para hash
+    Cuidado com poll longo
+	
+Link do projeto até essa aula: https://github.com/alura-cursos/kafka-introducao-e-microservicos/archive/aula2.zip
+
+#############################################
+# 03 - Criando nossa camada
+#############################################
+
+Refatorou o código.
+Legal: method reference na classe EmailService entre aspas duplas:  var service = new KafkaService(EnumTopico.ECOMMERCE_SEND_EMAIL, "emailService::parse");
+
+O que aprendemos nessa aula:
+    A importância de evitar copy e paste
+    Criando nossa camada de abstração
+    Criando nosso Dispatcher
+    Criando nosso Service
+
+Link do projeto: https://github.com/alura-cursos/kafka-introducao-e-microservicos/archive/aula3.zip
+
+#############################################
+# 04 - Serialização customizada
+#############################################
+
+## 04.Serialização GSON
+Depois que refatorou a classe kafkaDispatcher para receber um order como parâmetro, que até então era string, deu o problema abaixo:
+PROBLEMA: 
+class br.com.openmind.Order cannot be cast to class java.lang.String (br.com.openmind.Order is in unnamed module of loader 'app'; java.lang.String is in module java.base of loader 'bootstrap')
+A configuração inicial foi para ele transformar string em bytes, veja: 
+properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+SOLUÇÃO:
+Gson -> criar a classe: GsonSerializer e refatorar:
+properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, GsonSerializer.class.getName());
+
+Essa aula o professor parametrizou uma séria de campos via construtores das classes de serviço: FraudDetectorService, KafkaService e LogService
+
+O que aprendemos nessa aula:
+    Como limpar os diretórios de log e dados do zookeeper e kafka
+    Como utilizar diretórios não temporátios para o zookeeper e kafka
+    Como utilizar o GSON
+    Criando um serializador customizado do Kafka
+    Verificar o conteúdo exato de uma mensagem em um programa
+    Deserialização customizada
+    Lidando com customização por serviço
+Link do projeto: https://github.com/alura-cursos/kafka-introducao-e-microservicos/archive/aula4.zip
+
+#############################################
+# 05 - Serialização customizada
+#############################################
+
+
