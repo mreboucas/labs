@@ -1,7 +1,7 @@
 package br.com.openmind;
 
 import br.com.openmind.enumeration.EnumTopico;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 

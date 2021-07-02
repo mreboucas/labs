@@ -35,6 +35,9 @@
  
  >>Listar tópicos / list topics
  CLI: kafka-topics --bootstrap-server localhost:9092 --list
+ 
+ >>Descrever tópicos
+ CLI: kafka-topics --bootstrap-server localhost:9092 --describe
   
  >>Criar topics sem partições
  CLI: kafka-topics --bootstrap-server localhost:9092 --create --topic NOME_TOPIC
@@ -259,7 +262,8 @@ Para ACK == 1, O líder de partição solicita a confirmação ao Producer, se n
 Se o leader(partition-0) cair e não houver réplica dessa partição, no modo ack == 1 vai haver perda de dados.
 
 Para usar o all=all deve ser usada uma config min.insync.replicas (pode ser configurado para o broker ou tópico).
-Ex.: min.insync.replicas=2 (cenário mais comum ) -> implica que pelo menos 2 brokers/tópico devem responder que possuem o dado.
+Ex.: min.insync.replicas=2 (cenário mais comum ) -> implica que pelo menos 2 brokers/tópico devem responder que possuem o dado, ou seja pelo menos
+o número especificado deve conter as réplicas dos dados. 
 
 1)COnfig retires Producer (reprocessamento Producer)
 Ref sobre retries:
@@ -495,7 +499,7 @@ Alterar no arquivo -> plugin.path=connectors -> para ficar com o mesmo nome da p
 PEgar o assets do connector e jogar as libs na pasta do projeto: kafka-connect/connectors/twitter-connect
 https://github.com/jcustenborder/kafka-connect-twitter/releases
 
---Listar os Offsets (CURRENT-OFFSET) -> LAG -> Qtd de Mensagens (LOG-END-OFFSET)
+--Listar os Offsets (CURRENT-OFFSET) -> LAG -> Qtd de Mensagens (LOG-END-OFFSET) - informações dos GRUPOS (WARNING)
 kafka-consumer-groups --bootstrap-server localhost:9092 --all-groups --describe
 
 >>>>>>>>>> AULA 02 - MÓDULO 12 (Kafka Connectors - Exemple twitter with config files -> folder project: kafka-connect)  <<<<<<<<<<<< 
@@ -532,7 +536,7 @@ Especificidades:
  Libs kafka-streams:
  https://mvnrepository.com/artifact/org.apache.kafka/kafka-streams/2.8.0
  
- Surgiu: kafka: 0.11 -> evloluiu: 2.0
+ Surgiu: kafka: 0.11 -> evoluiu: 2.0
 >>>>>>>>> Aula 1 - CLI Introduction (6. CLI (Command Line Interface)) <<<<<<<<<<<
 
 >>>>>>>>>> AULA 04 - MÓDULO 12 (Kafka Streams)  <<<<<<<<<<<< 

@@ -1,0 +1,27 @@
+Criar projetos quarkus:
+1) https://code.quarkus.io
+
+2) [especificação para microservices]
+https://microprofile.io/ -> MicroProfile Starter
+
+3) VS - instalar o plugin do quarkus (red hat)
+ctrl+shift+p -> atalho comandos quarkus > generate a quarkus project
+
+4) Intellij - instalar o plugin quarkus tools > create a new project quarkus 
+
+* 5) create command line by maven: https://quarkus.io/guides/maven-tooling
+Obs.: usar o link do maven para criar/add projetos e dependências
+Extensões:
+RESTEasy JAX-RS
+RESTEasy JSON-B
+SmallRye OpenAPI
+Hibernate ORM with Panache
+JDBC Driver - MySQL
+MongoDB client
+Health [espécie de actuartor]
+Ex.: ./mvnw quarkus:add-extension -Dextensions="SmallRye OpenAPI"
+Ex.: http://localhost:8080/q/swagger-ui/
+
+
+Aula sobre testes container:
+https://www.udemy.com/course/des-web-quarkus-basico/learn/lecture/18583357#overview

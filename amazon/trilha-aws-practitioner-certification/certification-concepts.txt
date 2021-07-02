@@ -1,0 +1,896 @@
+###################
+##     MÓDULO 1
+###################
+Confiabilidade: capacidade de recuperação; mitigar interrupções.
+zonas de disponibildiades (avaliability zones): um ou mais data centers. Instalações no mundo e separadas.
+INTRODUÇÃO ÀS INTERFACES AWS
+> 3 ways to use AWS:
+ I - console management aws (interface gráfica - maioria dos serviços têm )
+ II - AWS CLI (command line)
+ III - Kits de desenvolvimento (SDKS) - Connect your software with AWS. 
+	(Java, js, python, php, .net, ruby, go, node.js, c++)
+ Obs.: alterações no console podem demorar um pouco, se forem realizadas alterações via CLI.
+> Crie seus próprios recursos
+> Acesse recursos de qualquer lugar.
+
+###################
+##     MÓDULO 2
+###################
+Principais serviços AWS
+
+> EC2 (ELASTIC COMPUTER CLOUD)
+
+> EBS (ELASTIC BLOCK STORAGE)
+Instâncias de armazenamento para os Ec2. HD or SSD
+Escolher volumes para necessidades diferentes (SO, logs sistema: ssd, hd)
+Pode criar snapshots (cópias) - compartilhar e copiar entre diferrentes regiões.
+Dados criptografados sem custo adicional.
+
+> S3 (AMAZON SIMPLE STORAGE SERVICE)
+Serviço de gerenciamento totalmente gerenciado por meio de API.
+Serviço indenpendente de qualquer outro.
+Usa o conceito de bucket para armazenar os dados
+cp - leva arquivos
+sync - leva folder
+
+> INFRAESTRUTURA GLOBAL DA AWS [R.Z.P] - Region > Avaliability Zone 
+ I - Regiões AWS: áreas geográficas que hospedam 2 ou mais zonas de disponibilidades. Nível organizador dos produtos AWS.
+     Recursos de uma regão não são replicados automaticamente para outras, nem todos os erviços estão em todas as regiões.
+ II - Zonas de Disponibilidades: conjunto de data centers. Cada zona é fisicamente isolada e independente, mas conectada por uma rede. Se uma zona cair as outras assumem.
+ III - Pontos de Presença: rede de entrega conteúdo ou CDN (Amazon Cloud Front). Cloud front é usada para entregar conteúdo aos seus clientes, pelo ponto de presença mais próximo.
+ Obs.: CLOUDFRONT -> Conteúdo Estátic/static
+         
+ 
+ + info: https://aws.amazon.com/pt/about-aws/global-infrastructure/
+
+> VPC (VIRTUAL PRIVATE CLOUD)
+	Criar uma rede privada na nuvem AWS (mesmos conceitos de redes locais)
+	Controle completo da configuração de rede ( isolar/expor recursos da VPC)
+	Camadas de controles de segurança (permitir/negar tráfego interno e epecífico da internet)
+	Outros produtos AWS implantam VPC (serviços de segurança inerentes à rede)
+
+RECURSOS VPC
+	Criação na alta disponibilidade das regiões e ZONAS DE DISPONIBILIDADE (AZ)
+	Sub-redes (DIVIDIR VPC's, abrange várias AZ)
+		pública: acesso direto a internet
+		privada: não têm acesso direto a internt (necessário para se comnicar com a internet um gateway de internet - IGW)
+	Tabelas de rotas (controle de tráfego que saí das sub-redes)
+	Gateway de internet (IGW) (Acesso a internet por meio da VPC)
+	NAT Gateway (permitem que recursos de sub-rede prividas acessem a internet)
+	Listas de controle de acesso de rede (NACL)
+	
+> SEGURANÇA NA AWS
+	Grupos de segurança (agem como firewall, controlam acesso a instâncias)
+	Regras: grupo de segurança: público, privado ou em algum lugar entra elas (controlar acesso a instâncias)
+
+###################
+##     MÓDULO 3
+###################
+> Application LOAD BALANCER
+	Recursos aprimorados:
+		Protocolos compatíveis (http(s) e websockets)
+		CloudWatch Métircas (balanceamento de carga)
+		Acesso Logs (ver detalhes)
+		Verificações de integridade (informações sobre o destino e integridade do aplicativo em nível granular)
+	Termos-Chave
+		Ouvintes: verifica solicitações de conexão e roteará para um 'destino' ou 'grupo de destino'
+		Destino: destino do tráfego
+		Grupo de destino: roteia as solicitações para um ou mais 'destinos'
+	ZONAS DE DISPONIBILIDADE (Avaliability Zones)
+		É precisar selecionar pelo menos duas subnetets/ (ver VPC's)
+	Obs.: redireciona baseado no CONTEÚDO da solicitação.
+	
+> Auto Scaling
+	Garante e quantidade correta de instâncias EC2 disponíveis para processar a carga dos aplictivos, isso de acordo com as configurações definidas.
+	Provê dados para o CloudWatch, objetivando consumo correto de recursos e redução dos custos por meio do provisionamento.
+	Adequado em requisitos de performance flutuantes
+	Se sustenta em duas PRÁTICAS (E.A):
+		Escalabilidade: garantir que a carga de trabalho tenha recursos suficientes do Ec2 - atender requisitos flutuantes.
+		Automação: automatizar o provisionamento de recursos Ec2
+	3 COMPONENTES necessários para configuração de auto scaling (C.G.P):
+	 I - CONFIGURAÇÃO de Execução
+		O quê?
+			AMI (imagem da instância)
+			Tipo de instância
+			Grupos de segurança
+			Funções
+	 II - GRUPO de Auto Scaling
+		Onde?
+			VPC e Sub-rede(s)
+			Load balancer
+			Mínimo de instâncias (ex.: 2)
+			Máximo de instâncias (ex.: 8)
+			Capacidade desejada
+	 III - POLÍTICA de Auto Sclaing
+		Quando?
+			Programando
+			Sob demanda
+			Política de expansão (+ Ec2)
+			Política de redução  (- Ec2)
+		Obs.: confg comum é criar alarmes de cloudwatch para aumentar ou diminuir instâncias, baseados nas configs de EC2 ou loadbalance.
+		
+> Amazon Route 53 (Web Service DNS)
+	Serviço de DNS que se vincula a uma zona
+	Cria um domínio e sub-domínio e vincula a um Ip de EC2, S3 ou loadbalance
+	O que faz?
+		Registro de domínio
+		DNS global
+		DNS público e privado
+		Vários algorítmos de roteamento
+		Ipv4/Ipv6
+		Integrando outros serviços de AWS
+	Estratégias de resoluções de DNS:
+		Roteamento simples
+		Localização geográfica (pega o mais próximo)
+		Failover
+		Roudrobin
+		Latência
+		Resposta com valores múltiplos
+
+> Amazon Relational Database Services (RDS)
+	Classe de INSTÂNCIA de DB:
+		- CPU
+		- Memória
+		- Performance de rede
+	Armazenamento de instâncias de DB (type of disk):
+		- Magnético
+		- Uso geral (SSD)
+		- IOPs pocisionadas
+	Aws SUPORTA 6 db types:
+		mysql, amazon aurora, sql server, postgre, mariadb e oracle.
+	Obs.: 
+		pode criar uma VPN com subnetes privadas dentro, uma para o EC2 e outra para o DB.
+		Cada subnete pertence a uma AZ (avaliability zone)
+		Pode referenciar o DB por DNS para uma instância/rpelica de Failover (quando o banco principal cair)
+		Método de replicação assíncrona
+		Usar réplicas de DB apenas para leitura (aumentar performance). Réplicas podem se tornar mestre. Réplicam podem ficar em outras regiões - evitar desastre.
+	
+> AWS Lambda
+	Computração sem servidor totalmente gerenciada
+	Execução orientada a 'EVENTOS'
+	Médições de frações de SEGUNDOS
+	Várias linguagens compatíveis
+	Languages: node.js, java, c# e python.
+	O que são os EVENTOS:
+		Ex.: alterações no S3, tabela do dynamodb, invoke API, backups, IOT's, backups etc
+		100 bilions of events by month
+	
+> AWS Elastic BeanStalk
+	É PAAS
+	Implantação rápida dos aplicativos
+	Reduz complexidade de gerenciamento
+	Steps:
+		Escolha o tipo de instância
+		Escolha o DB
+		Define e ajuste auto scaling
+	Componentes:
+		Seu código
+		Serviço aplicativo
+		Serviço HTTP
+		Sistema operacional
+		Intérprete de linguagem
+		Host
+> Amazon Simple Notification Service (SNS)
+	- Serviço de mensagens e comunicações móveis de publicação/assinatura fexível e totalmente gerenciado
+	- Coordena a entrega de mensagens para endpoints e clientes assinantes
+	- Fácil de configurar, operar e enviar comunicações confiáveis
+	- Desacople e ajuste a escala de microserviços, sistemas distribuíos e    aplicativos sem servidor
+	
+	PUBLISH/SUBSCRIBE -> lambda, http(s), amazon sqs
+	MOBILE NOTIFICATIONS -> ADM, APNS, BAIDU, GCM, MPNS, WINS
+	Steps:
+		- Create a topic
+		- Create a platform application
+		- Create a subscription
+		- Create a publish
+		- Publish text message
+
+Diferença entre SNS e SQS:
+O 'SNS' é um sistema distribuído de publicação e assinatura . As mensagens são enviadas aos assinantes como e quando são enviadas pelos editores ao SNS.
+
+O 'SQS' é um sistema de enfileiramento distribuído . As mensagens NÃO são enviadas aos destinatários. Os receptores precisam pesquisar ou receber mensagens do SQS . As mensagens não podem ser recebidas por vários receptores ao mesmo tempo. Qualquer receptor pode receber uma mensagem, processar e excluí-la. Outros receptores não recebem a mesma mensagem posteriormente. A pesquisa introduz inerentemente alguma latência na entrega de mensagens no SQS, diferentemente do SNS, onde as mensagens são imediatamente enviadas aos assinantes. O SNS suporta vários pontos finais, como email, sms, ponto final http e SQS. Se você deseja que um número e tipo de assinantes desconhecidos recebam mensagens, precisará do SNS.
+
+Link: https://qastack.com.br/programming/13681213/what-is-the-difference-between-amazon-sns-and-amazon-sqs
+
+> Amazon CloudWatch
+	Monitora recursos e os aplicataivos executados em tempo real
+	Recursos:
+		Métricas
+		Colete e monitore logs
+		Defina alertas
+		Reaja automaticamente a alterações
+	Métricas do Cloudwatch:
+		- CPU utilization
+		- Status verification
+		- Page view count
+	Pode enviar um alarme e disparar um evento (Casos de Uso):
+		de AUTOSCALING
+		Invocar um Lambda (atualizar entradas DNS)
+		Notificar quando um EC2 entrou num estado de execução
+		Realizar snapshot de um volume EBS
+		Registro operações em S3 usando o CloudWatch Events
+	Compnentes:
+		Metrics
+			- Dados sobre performance
+			- Conjunto ordenado de dados de publicados no cloudwatch
+			- métricas gratuitas por recursos: like as ec2, volumes ebs. rds
+			- publique suas próprias métricas de aplicativo por um preço adicional
+			- carregue todas as métricas em sua conta para pesquisa, gráficos e alarmes
+		Alarms [UMA ÚNICA MÉTRICA E EXECUTA 1:N AÇÕES]
+			- Observe uma única métricas
+			- Executa uma ou mais ações: com base no valor da métrica em relação a um limite ao longo de vários períodos
+			- A ação pode ser:
+				Ação do amazon EC2 ex.: para, iniciar e restart uma instância de Ec2)
+				Ação de autoscaling Ex.: executar uma ação de autoscaling
+				Notificação enviada a um tópico SNS Ex.: envio de msg a um tópico
+			- Invoca ações somente par alterações de estado sustentadas
+			EXEMPLOS: 
+				[UMA ÚNICA MÉTRICA E EXECUTA 1:N AÇÕES]
+					[INTERROMPER, ENCERRAR, REINICIALIZAR OU RECUPERAR UM EC2]
+					[REDUZIR/EXPANDIR UM GRUPO DE AUTO SCALING]
+					[ENVIAR MSG PARA O SNS]
+			EC2: CPU > 60% por 5 minutos 
+			AMAZON RDS: conexões simultâneas for > 10 por um minuto 
+			ELASTIC LOAD BALANCING: num hosts íntegros for < 5 por 10 minutos 
+		Events
+			IAM > CLOUD WATCH EVENTS > AWS LAMBDA (Revoga o acesso do IAM para usuário não autorizado)
+		Logs
+			Logs para monitoramentos
+		Dashboards (Painéis)
+			Painéis personalizáveis no console cloudwatch para monitoria em uma ÚNICA visualização (mesmo recursos distribuídos em regiões diferentes)
+			Visualizações personalizáveis de métricas e alarmes (Imagens e dados)
+			Crie painéis usando o console, CLI AWS ou a API PutDashBoard
+			
+> Amazon CloudFront
+	Usa a rede global (+ de 80 locais e + 10 pontos de presença de caches) para dispor dados
+	Se posicionar de uma melhor regisão para DIMINUIR A LATÊNCIA
+	CDN (CONTENT DELIVERY NETOWORK - REDE DE ENTREGA DE CONTEÚDO)
+	VISÃO GERAL
+		Rede global de expanção
+		Proteja o conteúdo na borda
+		Forte integração com principais produtos Aws
+		Alta peformance
+		Econômico
+		Fácil de usar
+	CASOS DE USO:
+		Armazenamento de cache de ativos estáticos
+		Stream de vídeo ao vivo e sob demandaSegurança e proteção contra DDOs
+		Conteúdo dinâmico e personalizável
+		Segurança e Criptografia
+		Aceleração de APIs
+		Distribuição de software
+		
+> AWS CloudFormation [VOLTAR PARA VER MELHOR - 30% APENAS ASSISTIDO)]
+	Simplifica a tarefa de criar de forma repetida e previsível grupos de recursos relacionados que potencializam seus aplicativos
+	Aws management console;
+	AWS CLI
+	Chamadas SDK/API
+Obs.: provisiona recurso de forma repetida
+	
+
+CloudFront use cases:
+    Accelerate static website content delivery.
+    Serve video on demand or live streaming video.
+    Encrypt specific fields throughout system processing.
+    Customize at the edge.
+    Serve private content by using Lambda@Edge customizations.
+	
+##################################
+##     MÓDULO 4 - Architecture
+##################################
+> AWS Well-Achitrected Framework
+Obs.: melhores prátiocas estabeleciddas desenvolvidas por meio das lições aprendidas ao trabalhar com clientes.
+PILARES: [SCEOE]
+	Segurança
+	Confiabilidade
+	Eficiência de performance
+	Otimização de custos
+	Excelência operacional
+	
+	PILAR DE SEGURANÇA
+		Identity and access management (IAM) - autorizar apenas usuários que se deseja
+		Controles de detecção - incidente de segurança
+		Proteção de infraestrutura - proteger de acesso não autorizado e não intencional
+		Proteção de dados
+		Respósta a incidentes
+	  #Princípios de projeto
+		Implementar a segurança EM TODAS AS CAMADAS (LAYERS): perímetros e sistemas
+		Habilitar rastreabilidade - 
+		Aplicar princípio de privilêgio mínimo
+		Concentar-se na proteção do seu sistema
+		Automatização
+
+	PILAR DE CONFIABILIDADE
+		Recover problems/faults
+		Apply better praticies on:
+			Fundaments
+			Change management
+			Fault management
+		Prevision, response and fault prevention
+		-> 3 ÁREAS:
+			Fundations
+			Change management
+			Faulire management
+		#Princípios de projeto:
+			Testar procedimentos de recuperação
+			Recuperar automaticamentwe
+			Ajustar escala horizontalmente
+			Parar de estimar a capacidade
+			Gerenciar alterações na automação
+	PILAR DE EFICIÊNCIA E PEFORMANCE
+		Selecionar soluções personalizáveis
+		Revisr para inovar continuamente
+		Monitorar produtos da Aws
+		Considerar as vantagens
+		#Princípios de projeto:
+			Democratizar tecnologias avançadas (deploy as a service)
+			Ter alcance global em minutos (várias regiões do globo - baixa latência - baixo custo)
+			Usar arquiteturas sem servidor (servless - reduz custos)
+			Experimentar com mais frequência 
+			Ter afinidade mecânica (solução tecnológica que melhor de adeque a sua necissidade)
+
+	PILAR DE OTIMIZAÇÃO DE CUSTOS (COST OPTIMIZATION)
+		Usar recursos econômicos
+		Combinar oferta e demanda (elasticidade AWS)
+		Aumentar a conscientização sobre despezas 
+		Otimizar ao longo do tempo (medir, monitorar e melhorar)
+		#Princípios de projeto:
+			Adotar um modelo de consumo (paga pelo que consome)
+			Medir a eficiência geral 
+			Reduzir os gastos com operações do datacenter (aws um trabalho leve)
+			Analisar e atribuir despesas ()
+			Usar serviços gerenciados
+	
+	PILAR DE EXCELÊNCIA PROFISSIONAL [MAIOR PILAR AWS]
+		Gerenciar e automatizar alterações
+		Responder a eventos
+		Definir padrões
+	
+
+> Fault Tolerant and High Disponibility
+	Sistemas funcionando e acessíveis de um modo geral
+	Tempo de inatividade seja minimizado
+	Necessidade mínima de intervenção humana
+	Investimento mínimo
+	Comparativo ON PRIMISES X AWS'
+		Tradicional
+			Caro
+			Somente aplicativos de missão crítica
+		AWS
+			Vários servidores
+			ZOnas de disponibilidade
+			Regiões
+			Servodores tolerantes a falhas
+	Ferramentes de alta disponibilidade
+		Elastic load balancers (ELB)
+			Distribui o tráfego de entrada(cargas)
+			Envia métricas ao cloudwatch
+			Desencadeia/notifica
+				Alta latência
+				Utilização em excesso
+		Endereços de ips elásticos
+			São endereços Ips estáticos
+			Falhas de máscara (se ocorrerem)
+			Continuará a acessar aplicativos se uma instância falhar
+		Amazon route S3
+			Serviço de DNS autoritativo
+				Converte nomes em IPS
+			Suportes
+				Roteamento simples
+				Roteamento baseado em latência
+				Verificação de integridade
+				Failsovers DNS
+				Roteamento por localização geográfica
+		Auto scaling
+			Ecerra e executa instâncias
+			Auxilia no ajuste ou na modifcação de capacidade
+			Cria novos recursos sob demanda
+		CloudWatch
+			Coleta de estatísticas distribuídas
+			Rastreia métricas de infraestrutura
+			Usa as próprias métricas personalizadas
+			Usado como autoscaling
+	Ferramentas tolerantes a falhas
+		AWS SQS (simple queue service)
+		AWS SSS (simple storage service)
+		AWS RDS (relacional database) > backups automáticos, snapshots, implantações em várias zonas de disponibilidade
+		
+Link: https://aws.amazon.com/pt/architecture/
+
+> Web Hosting
+	Teacher Spoke about demand consuption
+	Low coast
+	Scalable
+	On demand solution
+Link: https://aws.amazon.com/pt/websites
+
+#######################################
+##     MÓDULO 5 - Segurança na AWS
+#######################################
+
+> Modelo de responsabilidade compartilhada [U.A.G / H.N.P]
+	User data [USER 100% responsável]
+	Application [USER 100% responsável]
+	Guest OS [USER 100% responsável]
+	Obs.: EC2 DAQUI PARA CIMA [aws não tem visibilidade nessas camadas acima: SO, dados etc]
+          Possui chave de acesso, criptografia etc	
+	-----------------------
+	Hypervisor [AWS 100% responsável. Divulga que o hypervisor é baseado em XEN]
+	Network [AWS 100% responsável. VPC - acesso restrito]
+	Physical [AWS 100% responsável. servidores físicos da AWS - acesso restrito]
+
+> Identity and Access Management (IAM)
+  USER GROUP ROLE [autenticação] POLICY-DOCS[autorização] [U.G.R.P]
+  
+  -User: Is a operator, cloud be a human or machine. The credencials are PERMANENT. 'USER' BELONGS TO 'GROUP'
+  -Group: grupo de usuários 'GROUP' BELONGS TO 'USER'
+  -Role: NOT rules/permisson. Is the AUTENTICATION methods. TEMPORARY. As roles ocorrem em um arquivo separado conhecido como policy docs.
+  -Policy Docs [AUTORIZATION]: is a JSON document that could be vinculataded a user, group or role. Policy docs has a APIS groups, white list; Has black too list with explicit negations operations.
+        Ex.: hour of the day, specific network, operations functions
+		Pratice example: send file to S3. Checks user name, password and secret access key.
+		Pratice example 2: encerrar/interromper a execução em produção. Cria um doc policy que nega (DENY) a parada do Ec2 e enceramento do Ec2 e aplicar isso para todos os USERS, GROUPS and ROLES.
+		Pratice example 3: hacker has a account and password one user. The security management dont know which user, he just delete all POLICY DOCS.
+		O hacker tenta apagar um bucket no S3, o sistema vai autenticar o user que o hacker tem (ROLE), mas quando o policy docs for autorizar vai NEGAR.
+		A ação será registrada no 'AWS CLOUD TRIAL'.
+	Obs: toda ação de API (sucesso ou não) será registrada no CLOUD TRIAL (log de segurança)
+
+> Amazon Inspector
+ Ferramenta que ajuda a melhorar a SEGURANÇA e a CONFORMIDADE de aplicativos implantados na AWS (desen/prod), tornam as coisas mais simples para resolver os problemas abaixo.
+ 
+ a Segurança de TI é importante, mas é: complexa, cara, demorada, difícil de rastrear e difícil de tornar eficiente.
+ 
+  	O que faz?
+	- Avalia aplicativos para:
+		Vulnerabilidades
+		Desvios das melhores práticas
+	- Produz um relatório detalhado com:
+		Descobertas de segurança
+		Etapas priorizadas para correção
+	Inpector NÃO garante que as recomendações resolverá todos os problemas. As descobertas dependem de cada modelo de avaliação escolhido. Você é responsável pela segurança.
+
+	Acesso ao Amazon Inspector
+		Console do Amazon Inspector (Interface)
+		Kits de desenvolvimento (SDK's) da AWS#####
+		API HTTPS do amazon inspector
+		Ferramentas da linha de comando da AWS (CLI)
+		
+	Regras Integradas
+		Inclui uma base de conhecimento com centenas de regras que são mapeadas:	
+			Padrões comuns de segurança e conformidade;
+			Definições de vulnerabildiade
+		Atualizadas regularmente pelos pesquisadores de segurança da AWS
+	Ex.: quando inspector avalida um detino ele analisa informações detalhadas com possíeis problemas de segurança e  recomendações
+
+	Ele permite:
+		Avalie seus recursos da AWS com rapidez e facilidade;
+		Reduza o tempo com avaliações de segurança para que você possa se concentrar em problemas de segurança mais complexos
+		Obtenha uma compreensão mais profunda dos seus recursos da AWS
+
+Link: https://aws.amazon.com/pt/inspector/
+
+> Amazon Shield [CAMADA DE APLICAÇÃO DO OSI - plano advanced]
+	serviço gerenciado de proteção contra NEGAÇÃO  de serviço distribuída (DDoS) que protege aplicativos executados na AWS.
+	Não há necessidad de contactar AWS para seu suporte.
+	DOS - única origem do ataque de negação
+	DDOS - várias origens/fontes (endpoints, IOT, Pc com malware etc) de ataques para negação do serviço. Ataques na cama de aplicação.
+		Usa-se WAF (firewall for application) para bloquear essas ações
+		-> Desafios da mitigação de DDOS (Shield vem resolver os problemas abaixo)
+			Configuração e implementação complexas
+			Limitações de largura de banda
+			Intervenção manual
+			Demorada
+			Peformance degradada
+			Cara
+		-> AWS Shields vem ajudar você a superar esses desafios
+			Duas opções	
+				-> Standard: disponível para todos os clientes, sem custo adicional
+					Proteção automática
+						Qualquer recursos AWS
+						Qualquer região AWS
+					Detecção Rápida - sempre ativa
+					Mitigação de ataques em linha
+						Técnicas de mitigação integradas automatizadas
+						Evita o impacto da latência
+					Autoatendimento
+						Não há necessidade de envolver o AWS support
+						
+				-> Advanced: [Suporte mais sofistifcado na camada de APLICAÇÃO] Serviço pago. Níveis mais altos de proteção, recursos e benefícios. 24h X 7dias (chamado de DRT - suporte aos clientes/usuários)
+					Suporte especializado (pode ser envolvida antes, durante ou após um ataque. O DRT fará a filtragem do incidente e mitigação)
+					Mitigação avançada de ataques
+					Visibilidade e notificação de ataques
+						Pode usar o WAF para montar a blacklist sem custo adicional
+						Cloudwatch para monitorar em real time os ataques
+					Monitoramento sempre ativo [Camada de APLICAÇÃO]
+						Amazon Route 53, Amazon CloudFront, Elastic Load Balancer (ELB), Elastic IP
+					Detecção aprimorada
+					Proteção contra custo de DDOs
+			Benefícios:
+				Econômico
+				Interação e implantação sem interrupções (protege contra atques nas camadas de REDE (3) e TRANSPORTE (4) mais frequentes
+				Proteção personalizável
+			Proteção do DNS [Route, CloudFront e Elastic Ip]
+				Uso do Amazon Route 53
+					AWS Shield Standard - Zonas hospedadas. Protoege ataques na camada de infraestrutura
+						Usa o cloudfront para proteção abrangente
+					AWS Shield Advanced - Visibilidade de ataques, suporte à DRT.
+				Uso do Amazon CloudFront ou do Application
+					Load Balancer
+						AWS Shield Standard - Sempre ativo, limpa o tráfego incorreto
+						AWS Shield Advanced - suporte a DRT, engenharia de tráfego, proteção da camada de aplicativos. Desliga automaticamente o tráfego ruim.
+				Uso do endereço IP elástico
+					AWS Shield Standard - técnicas integradas
+					AWS Shield Advanced - perfis de mitigação personalizados, largura de banda adicional
+		Resumo
+			Proteção integrada contra ataque DDOs
+			Acesso a ferramentas, serviços e especialização para ajudá-lo a proteger seus aplicativos da AWS
+Link: https://aws.amazon.com/pt/shield/?whats-new-cards.sort-by=item.additionalFields.postDateTime&whats-new-cards.sort-order=desc			
+
+> Segurança e Conformidade
+	Responsabilidade da AWS
+		Fornecer plataforma altamente segura e controlada
+		Fornecer uma ampla variedade de recursos de segurança
+	Responsabilidade do cliente
+		Configurar a T.I.
+		
+	Informações de Segurança da Aws
+		AWS compartilha informações de segurança:
+			Obtenção de certificações do setor
+			Publicação de práticas se segurança e controle
+			Relatórios de 
+	Programas de garantia
+		AWS fornece informações e recursos de conformidade:
+			Certificações/declarações
+			Suporte jurídico/normativo
+			Alinhamento/Estruturas
+				Funcionalidade
+					Recursos de segurança
+				Habilitadores
+					Livros de execução de conformidade
+					Mapeamentos de documentos
+					Whitepapers
+				Contratos legais
+					Acordo de processamento de dados da AWS e adendo de associado comercial
+	Programa de conformidade e gerenciamento de riscos
+		Serviços de Informação da Justiça Criminal (CJIS)
+		Cloud Security Alliance (CSA)
+		Family Educational Rights And Privacy Act (FERPA) - Lei de direitos educacionais e privacidade de família
+		Health Insurance Portability and Accountability Act (HIPPA - Lei de portabilidade e responsabilidade do seguro de saúde)
+		Motion Picture Association of America MPAA
+	Componentes da conformidade da AWS [R.A.S]
+		Gerenciamento de Riscos
+			Pode ser realziado por empresas terceiras especializadas ou pelo próprio cliente
+		Controle de acesso ao ambiente
+		Segurança da informação
+			Projetado para proteger
+				Confidencialidade
+				Integridade
+				Disponibilidade
+			Publica o whitepaper de segurança (AWS disponibiliza para ajudar os clientes como proteger seus dados)
+	Conformidade do cliente
+		Analisa informações confiáveis e documenta requisitos de conformidade
+		Projeta e implementa objetivos de contronle que atendam aos requisitos de conformidade
+		Identifique e documente controles pertencentes a terceitos
+		Verifica se todos os objetivos de controle foram atendidos, projetados e operam com eficácia.
+	
+Link: /complience
+		
+> Criptografia de dados
+	Recursos de criptografia
+	Opções de gerenciamento de chaves
+		AWS key management service
+	Opções de armazenamento de chaves criptográficas baseadas em hardware
+		AWS CloudHSM
+> Controle de gerenciamento de acesso
+	Identity and Access Management (IAM)
+	Muilt-factor Authentication (MFA)
+	Integração e federação com diretórios corporativos
+	Amazon Cognito
+	AWS SSO
+> Monitoramento e registro de log
+	Ferramentas e recursos para reduzir seu perfil de risco
+		Visibilidade detalhe das chamadas de API
+		Agregação de logs e opções
+		Notificação de alerta
+> AWS marketplace
+	Parceiros qualificados para comercializar/vender software para clientes da AWS
+	Loja de software on-line que pode ser executada na AWS
+
+
+########################################
+##     MÓDULO 5 - Pricing Definition
+########################################
+Conceitos básicos da definição de preços
+	Instâncias reservadas (3 opções)
+		> Tudo adiantado: AURI (all) - Maior pagamento, maior o desconto
+		> Partial adiantado: PURI (partional) - Menor pagamento, menor desconto
+		> Nenhum pagamento adiantado: NURI (no) - Nenhum pagamento, pouco desconto
+		Obs.: AWS oference instância micro EC2, S3, EBS, ELB grátis por um ano.
+Link: /pricing	
+
+Detalhes da definição de preços
+	Pague por
+		Capacidade computacional
+		Armazernamento
+		Transferência de dados de saída (agregada)
+	Não há cobrança para:
+		Transferência de dados de entrada
+	Definição de preço de serviços para ofertas da Aws
+		AWS EC2
+			Web service que:
+				Fornece capacidade computacional redimensionável na nuvem
+				Permite a configuração da capacidade com o mínimo de atrito
+				Fornece controle completo
+				Cobrança apenas pela capacidade usada
+			Fatores de custo	
+				Faturamento por segundo/hora:
+					Os recursos geram cobrança somente quando estão em execução
+				Configuração da instância:
+					Capacidade física da instância
+					A definição de preço varia de acordo com:
+						Região da Aws
+						SO	
+						Tipo de instância
+						Tamanho da instância
+				Tipos de compra
+					Instâncias sob demanda:
+						Capacidade computacional por hora e segundo
+						Mínimo de 60 segundos
+					Instâncias reservadas:
+						Instâncias de pagamento antecipado baixas ou não reservadas
+						Desconto na cobrança por hora para essa instância
+					Instâncias Spot
+						Você faz ofertas pela capacidade não utilizada do Amazon EC2
+				Outras considerações
+					Número de instâncias
+						provisione várias instâncias para lidar com picos de carga
+					Balanceamento de carga
+						Use o Elastic Load Balancing para distribuir o tráfego
+						Custo mensal baseado em:
+							Horas de execução do load balancer
+							Quantidade de dados processados pelo ELB (GB's)
+				Outros produtos
+					Monitoramento	
+						Use o CloudWatch para monnitorar instâncias
+						Monitoramento básico (padrão - sem custos)
+						Monitoramento detalhado (taxa fixa; meses parciais pro rata)
+					Autoscaling
+						Ajusta automaticamente o número de instâncias
+						Sem custo adicional
+					Endereços IP elásticos
+						Não há cobrança quando associada a uma instância em execução. Um único IP elástico é grátis.
+				SO e software
+					Preços de SO incluídos nos preços de instância
+					Software
+						Parceria com outros fornecedores (IBM, microsoft etc)
+						Licenças de fornecedor necessárias
+						Licenças existentes aceitas por meio de programas específicos de fornecedores
+		
+		Amazon S3
+			Armazenamento de objetos criado para armazenar e recuperar qualquer QUANTIDADE de dados de qualquer lugar
+			Fornece	Durabilidade, disponibildiade, escalabilidade, recursos de segurança, interações internas/externas, gerenciamento flexível e transferência de dados, compatibilidade com parceiros, fornecedores e produtos AWS.
+			Armazenamento padrão:
+				99,9999999% de durabilidade
+				99,99% de disponibilidade
+			Standard - Acesso infrequente (S3-IA)	
+				99,9999999% de durabilidade
+				99,99% de disponibilidade
+			Custo de armazenamento
+				Número e tamanho de objetos
+				Tipo de armazenamento
+			Fatores de custo	
+				Número de solicitações
+				Tipos de solicitações - txs diferentes para solicitações GET, diferente do que ocorre com PUT and COPY
+				Quantidade de dados transferidos para fora da região do S3
+				
+		Amazon EBS
+			Armazenamento em bloco para instâncias
+			Os volumes perssitema independentemente da instância
+			Discos análogos à virtuais na nuvem
+			Três tipos de volumes:
+				Uso geral (SSD)
+				IOPS provisionadas (SSD)
+				Magnético (HD)
+			Fatores de custo
+				Volumes: todos os tipos de volume são cobrados pela quantidade provisionada por mês em GB
+				IOPS:
+					Uso geral (SSD): incluído no preço
+					Magnético (HD): cobrado por número de solicitações E/S
+					IOPS provisionadas (SSD): cobradas pela quantidade provisionada em IOPS
+				Snapshots
+					Uso adicional por GB/mês de dados armazenados
+					Entrada não cobradas
+					Saída de dados é cobrada
+
+		Amazon RDS
+			Serviço qua ajuda a escalar instância de banco de dados relacionais na nuvem
+			Banco de dados relacional na nuvem
+			Econômico e redimensionável
+			Gerenciamento de tarefas administrativas demoradas
+			Fatores de custo:
+				Faturamento por hora: cobrança incorre durante a execução
+				Características do banco: modelo, tamanho e classe de memória
+				Tipo de compra de banco de dados:
+					Cobrança por hora
+					Instâncias do banco de dados reservadas exigem pagamento adiantado. Período de 1 ano até 3 anos.
+					Provisione várias instâncias de banco para lidar com picos de carga
+				Armazenamento provisionado:
+					Gratuito para armazenamento de backup de até 100% do armazenamento de banco de dados
+					Armazenamento de backup para instâncias de banco de dados encerradas cobrando a GB/mês
+				Armazenamento adicional:
+					Backup além do armazenamento provisionado cobrado a GB/mês
+				Tipos de implantação:
+					Cobranças de armazenamento e I/O
+					Única Zona de Disponibilidade
+					Múltiplas Zonas e Disponibilidade
+				Transferência de dados:
+					Não há cobrança pela entrada
+					Há cobrança pela saída, pelo volume (faixas transferidas)
+					
+		Amazon CloudFront
+			Único serviço para entrega de conteúdo
+			Baixa latência, ALta velociudade na transferência, sem compromissos mínimos.
+			Fatores de custo
+				Varia de acordo com as regiões geográficas
+				Com base em:
+					Solicitações
+					Transferências de dados para fora
+AWS Trusted Advisor
+O AWS Trusted Advisor faz recomendações que ajudam você a seguir as melhores práticas da AWS. O Trusted Advisor avalia a sua conta através de verificações. Essas verificações identificam formas de otimizar sua infraestrutura da AWS, aumentar a segurança e o desempenho, reduzir os custos gerais e monitorar as cotas do serviço. Depois, você pode seguir as recomendações da verificação para otimizar seus recursos e serviços.	
+
+Planos do AWS Support
+	Supports
+		AWS Support
+			Testar com a Aws
+			Usar a AWS em produção
+			Usar essencialmente para negócios da AWS
+			Orientações proativas
+				Gerente técnico de conta (TAM) - ponto de contato principal. Pode oferecer suporte, melhoria de arquitetura e comunicação contínua. Ele é seu defensor (Ligou para mim para falar da exposição da chave AWS no git)
+				
+			Melhores práticas
+				Trusted Advisor - recurso online para verificar oportunidades na nuvem, reduzir gastos e aumentar produtividade.
+			Assistência à conta
+				AWS Support Concierge - especialista em faturamento e contas. Aborda todas as dúvidas não técnicas sobre faturamento e contas.
+		Planos do AWS Support
+			Basic Support
+			Developer Support (inicial)
+			Business Support (intermediário
+			Enterprise Support (avançado - concierge)
+			
+Link comparativo dos planos: https://aws.amazon.com/pt/premiumsupport/plans/
+
+LINKS APÓS CONCLUSÃO CURSO:
+
+https://media.amazonwebservices.com/AWS_TCO_Web_Applications.pdf
+https://d0.awsstatic.com/whitepapers/aws_pricing_overview.pdf
+https://d1.awsstatic.com/whitepapers/AWS_Cloud_Best_Practices.pdf
+https://d0.awsstatic.com/whitepapers/aws-overview.pdf
+https://aws.amazon.com/premiumsupport/plans/
+
+
+	
+INFORMAÇÕES SOBRE A PROVA:
+https://aws.amazon.com/pt/certification/certified-cloud-practitioner/
+	
+#### SIMULADO AWS#####
+
+>> What AWS services can be used on premise?
+	Resultado de imagem para aws service on premises
+	Run AWS Services on premises
+
+>>With AWS Outposts you can run Amazon EC2, Amazon EBS, Amazon S3, container-based services such as Amazon EKS, database services such as Amazon RDS on AWS Outposts and analytics services such as Amazon EMR on premises.
+
+>> Migrating hundreds of TB of data to Amazon S3 with AWS DataSync
+https://aws.amazon.com/blogs/storage/migrating-hundreds-of-tb-of-data-to-amazon-s3-with-aws-datasync/
+
+
+>> AWS managed services, such as Amazon ElastiCache and Amazon Relational Database Service (Amazon RDS)
+AWS Managed Services helps to reduce your operational overhead and risk. AWS Managed Services automates common activities, such as change requests, monitoring, patch management, security, and backup services, and provides full-lifecycle services to provision, run, and support your infrastructure. AWS Managed Services unburdens you from infrastructure operations so you can direct resources toward differentiating your business.
+
+#Simulado 1
+>> Q1 - 
+	EC2 Instance Connect:
+		
+	Session Manager:
+		Session Manager é totalmente gerenciadoAWS Systems Managerque permite gerenciar suas instâncias do Amazon Elastic Compute Cloud (Amazon EC2), instâncias no local e máquinas virtuais (VMs) por meio de um shell interativo baseado no navegador com um clique ou por meio doAWS Command Line Interface(AWS CLI).Session ManagerO fornece gerenciamento de instâncias seguras e auditáveis, sem precisar abrir portas de entrada, manter bastion hosts ou gerenciar chaves SSH.Session ManagerO também permite que você cumpra políticas corporativas que exigem acesso controlado a instâncias, práticas de segurança rígidas e logs totalmente auditáveis com detalhes de acesso à instância, ao mesmo tempo que ainda fornecem aos usuários finais um simples acesso entre plataformas com um clique para suas instâncias gerenciadas. 
+>> Q2 - R.Z.P 
+>> Q3 - SMS - SERVER MIGRATION SERVICE
+ 		
+>> Q6 CLOUD FRONT -> Conteúdo Estático/static
+>> Q7 AWS GLOBAL ACCELERATOR: otimizar transferência de conteúdo distribuído, roteamento. Resolve o problema: anycast static IP adress.
+>> AWS BASIC SUPPORT PLAN: TAM (TECNICAL ACCOUNT MANAGER) -> 
+>> NATURAL LANGUAGE (NLP - NATUAL LANGUAGE PROCCESS): AWS COMPREHEND
+>>[10] AWS APPLICATION STREAMING: AWS APP STREAM 2.0
+>>[10] KINESIS STREAM: ESPÉCIE DE KAFKA (GRANDE QUANTIDADE DE DADOS). Usa SQS para desacoplar.
+>> Q12 - run your applications onpremises and in the cloud: outposts
+>> Q13 - D - AWS Snowmobile (centenas de petabytes) - Analogia: caminhão que carrega dados até o data center.
+			 AWS Snowball Edge: malinha que carrega os dados (escala de tera - menor)
+>> Q14 - RDS, ElastiCache, and CloudSearch in AWS -> Simplify OS patching
+>> Q15 - User - Groups - Roles [AUTENTICAÇÃO] | Group Policy [AUTORIZAÇÃO]
+>> Q16 - Key Design Principle running application AWS -> Loose Coupling (SQS)
+>> Q17 - autoscalling
+>> Q18 - Test youy mobile app: AWS Device Farm e AWS Mobile Hub
+>> Q19 - EC2 Instance for a beta program which is scheduled to change its instance family: Convertible RI (trocar família OS etc). Altera a família antes do término do tempo do plano.
+		 Standard RI: não altera o pacote até terminar o período.
+
+#Simulado 2
+>> Q1: capacity in the AWS Cloud and provides up to a 90% discount compared to On-Demand prices: Spot Instance (Só paga quando estiver ativa)
+       72% de discount: Standard Reserved Instance (paga ligada ou não)
+	   
+>> Q2:  minimum number of Availability Zones that you should set up for your Application Load Balancer: 2 AZ -> R
+
+>> Q10:  allows you to set coverage targets and receive alerts when your utilization drops below the threshold you define:
+		R - AWS Budgets
+		Amazon CloudWatch Billing Alarm (tem uma observação sobre esse item abaixo)
+Obs.:  Billing Alerts is very limited as compared to Budgets. Most notably, billing alarm represent only the amount you have been already charged. In contrast, budget can alarm you based on foretasted charges, which can give you a bit of heads up to figure out what's happening before you get hit with excess bill usage.
+
+>> Q12: Which of the following are true regarding Amazon Relational Database Service (Amazon RDS)? (Select TWO.)
+	R - Makes it easy to set up, operate, and scale a relational database
+	Provides 99.99999999999% reliability and durability (S3 que provê esses monte de 999999999)
+	R - It is a fully managed relational database service.
+	Automatically scales up the relational database instance size based on the incoming workload
+	Simplifies the management of time-consuming database administration tasks
+>> Q13: Estimating their costs: AWS Pricing Calculator (estimar e prever os custos)
+                                AWS Sales Representative (uma pessoal, um papel)
+								Consolidated Billing (combinar várias contas e custos de uma organização)
+								Costa Allocationg tag (categorizar os custos por tags)
+>> Q14: Which of the following can help the company to design, architect, build, migrate, and manage their workloads and applications on AWS: 
+			R -> AWS Partner Network Consulting(GFT)
+		    Techinical Account Management (Fornece boas prátias de uso e cordena algumas ações)
+>> Q15: use to launch a new Amazon RDS database cluster to your VPC:
+		AWS CloudFormation
+		AWS Management Console
+>>> Q16: AWS services through the AWS CLI: Access keys
+		 IAM username and passwords (tela de login console)
+		 SSH keys (conectar servidor)
+                                 
+>> Q17 - de boa sobre edge
+>> Q18 - RESOLVE the connection between your on-premises VPN and your AWS virtual private cloud: 
+		NAT Gateway (traduz conexão de fora para dentro da VPN)
+		R - Virtual Private Gateway
+		Egress-Only Internet Gateway
+		VPC Peering (conectar duas VPC)
+		R - Amazon Route 53 (tem o resolver interno para resolver problemas de conexão)
+>> Q19 - EC2 instance for their application which they plan to migrate to a Reserved EC2 Instance to save on cost. Which of the following is the most 			cost-effective option if the application being hosted would be used for more than 3 years:
+		R - All Upfront, Standard Reserved Instance pricing for a 3-year term. (standard não baixa, nem aumenta o valor)
+		No Upfront Convertible Re o served Instance pricing for a 3-year term. (conversible o valor flutua)
+>> Q20 - Which of the following allows you to categorize and track your AWS costs on a detailed level?
+		AWS Budgets ()
+		Consolidated Billing (custos consolidados de várias contas em uma única)
+		R - Cost allocation tags (organizar os custos por tags)
+		Amazon Aurora backtrack - (feature do RDS (ajuda a desfazer configurações erradas)
+
+#Simulado 4
+
+Q11 - 
+	R - AWS Direct Connect
+	AWS Directory Service
+	R - AWS Site-to-Site VPN
+	Amazon Connect
+	AWS Snowcone
+	  
+Q12 - 
+	AWS Cost and Usage report - UTILIZAÇÃOD A AWS em cada categoria de serviço e IAM
+	Amazon Forecast - serviço para machine learning
+	AWS Pricing Calculator -  calcula o preço que vai ter de pré-venda
+	Cost Explorer - faz uma estimativa de custos mais inteligente - como escalonamento de máquinas vai consumir etc
+
+Q13 - 
+	AWS Artifact - informações de complience de INFRAESTRUTURA da AWS / parte contratual / agreements - Essa documentação fica no artifact. Artefatos contratuais. Tirar reports.
+	Amazon CloudWatch - monitora aplicações e não complience
+	AWS IAM
+	R - AWS Config - checa COMPLIENCE dos recursos da AWS
+
+Q14 - 
+	AWS Budgets - dar habilidade para alertar o usuário quando o custo exceder.
+	AWS Cost Explorer
+	R - AWS Cost and Usage report
+	AWS Systems Manager - gerenciamento de quase tudo da AWS, mas não serve para custos.
+
+Q15 - SSO
+Q16 -  Hybrid architecture
+Q17 - 
+	Amazon DynamoDB
+	AWS Lambda
+Q18 - Classic Load Balancer (vai ser deprecated)
+	- Network Load Balancer  - Camada 4
+  R - Application Load Balancer - Camada 7
