@@ -1,16 +1,14 @@
 package br.com.openmind;
 
 import br.com.openmind.enumeration.EnumTopico;
-import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class KafkaDispatcher<T> implements Closeable {
 
@@ -26,6 +24,9 @@ public class KafkaDispatcher<T> implements Closeable {
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 //        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, GsonSerializer.class.getName());
+        //Essa propriedade vai repercutir no send.get(). Ele vai esperar por todas as réplicas do líder
+        //serem atualizadas (ISR) dando confiabilidade (realability) a replicação das informações.
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
 
         return properties;
     }
@@ -41,11 +42,19 @@ public class KafkaDispatcher<T> implements Closeable {
             System.out.println("Sucesso enviando: " + data.topic() + ":::partition " + data.partition() + "/ offset " + data.offset() + "/ timestamp " + data.timestamp());
         };
         //get torna processo síncrono.
-        producer.send(record, callback).get();
+        RecordMetadata recordMetadata = producer.send(record, callback).get();
+        System.out.println(recordMetadata.offset());
+//
+        //Assíncrono
+//        Future<RecordMetadata> kafkaFuture = producer.send(record, callback);
+//        while(!kafkaFuture.isDone()) {
+//            System.out.println(kafkaFuture.isDone());
+//        }
+//        System.out.println(kafkaFuture.isDone());
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.producer.close();
     }
 }

@@ -21,6 +21,9 @@ public class LogService {
     public static void main(String[] args) throws InterruptedException, IOException {
         var logService = new LogService();
         try (var service = new KafkaService<>(LogService.class.getSimpleName(),
+                //Se atentar, se o log service estiver rodando, ele não escutará novos tópicos/subjects que por
+                //ventura possam vir a surgir. Tem que dar um stop/start no log service, ai ele pegará as informações
+                //dos novos tópicos.
                 Pattern.compile(EnumTopico.ALL_TOPICS.getTopico()),
                 logService::parse,
                 String.class,

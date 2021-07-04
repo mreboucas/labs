@@ -15,6 +15,9 @@
         <module>service-log</module>
         <module>service-new-order</module>
         <module>common-kafka</module>
+        <module>service-users</module>
+        <module>service-http</module>
+        <module>service-http-ecommerce</module>
     </modules>
 
     <properties>
@@ -23,7 +26,6 @@
     </properties>
 
     <dependencies>
-
         <!-- https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -46,7 +48,4 @@
         </dependency>
 
     </dependencies>
-
-
-
 </project>
