@@ -33,6 +33,7 @@ public class FraudDetectorService {
         }
     }
     private final KafkaDispatcher<Order> orderDispatcher = new KafkaDispatcher<>();
+
     private void parse(ConsumerRecord<String, Order> record) throws ExecutionException, InterruptedException {
         System.out.println("=========================================");
         System.out.println("Processing new order, checking for fraud");
