@@ -40,10 +40,10 @@ public class NewOrderServlet extends HttpServlet {
             var email = req.getParameter("email");
 
             var order = new Order(orderId, amount, email);
-            dispatcher.send(EnumTopico.ECOMMERCE_NEW_ORDER, email, order);
+            dispatcher.send(EnumTopico.ECOMMERCE_NEW_ORDER, email, new CorrelationId(getClass().getSimpleName()), order);
 
             var emailCode = "Thank you for order!! We are processing your order!";
-            emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, emailCode);
+            emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, new CorrelationId(getClass().getSimpleName()), emailCode);
             System.out.println("New order sent successfully.");
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().println("New order sent successfully.");

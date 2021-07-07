@@ -17,23 +17,21 @@ public class ReadingReportService {
 
     private static final Path SOURCE = new File("src/main/resources/report.txt").toPath();
 
-    public static void main(String[] args) throws InterruptedException, IOException {
+    public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
 
          var reportService = new ReadingReportService();
         try (var service = new KafkaService<>(ReadingReportService.class.getSimpleName(),
-                EnumTopico.USER_GENERATE_READING_REPORT,
+                EnumTopico.ECOMMERCE_USER_GENERATE_READING_REPORT,
                 reportService::parse,
-                User.class,
                 Map.of())){
             service.run();
         }
     }
-    private final KafkaDispatcher<User> orderDispatcher = new KafkaDispatcher<>();
-    private void parse(ConsumerRecord<String, User> record) throws ExecutionException, InterruptedException, IOException {
+    private void parse(ConsumerRecord<String, Message<User>> record) throws ExecutionException, InterruptedException, IOException {
         System.out.println("=========================================");
         System.out.println("Processing report for: " + record.value());
-
-        var user = record.value();
+        var message = record.value();
+        var user = message.getPayload();
         var target = new File(user.getReportPath());
         IO.copyTo(SOURCE, target);
         IO.append(target, "Created for " + user.getUuid());

@@ -37,7 +37,7 @@ public class GenerateAllReportServlet extends HttpServlet {
 //                batchDispatcher.send(EnumTopico.USER_GENERATE_READING_REPORT, user.getUuid(), user);
 //            }
             //O 'for' vai ser a cargo do serviço que vai consumir esse tópico que acessa a base de dados (responsabilidade no local certo).
-            batchDispatcher.send(EnumTopico.SEND_MESSAGE_TO_ALL_USERS, EnumTopico.USER_GENERATE_READING_REPORT.getTopico(), EnumTopico.USER_GENERATE_READING_REPORT.getTopico());
+            batchDispatcher.send(EnumTopico.ECOMMERCE_SEND_MESSAGE_TO_ALL_USERS, EnumTopico.ECOMMERCE_SEND_MESSAGE_TO_ALL_USERS.getTopico(), new CorrelationId(getClass().getSimpleName()), EnumTopico.ECOMMERCE_USER_GENERATE_READING_REPORT.getTopico());
             System.out.println("Sent generate report to all users");
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().println("Reports request generated");

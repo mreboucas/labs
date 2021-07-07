@@ -13,17 +13,16 @@ public class EmailService {
 
     public static void main(String[] args) throws IOException {
         var emailService = new EmailService();
-        try (var service = new KafkaService<>(EmailService.class.getSimpleName(),
+        try (var service = new KafkaService(EmailService.class.getSimpleName(),
                 EnumTopico.ECOMMERCE_SEND_EMAIL,
                 emailService::parse,
-                String.class,
                 Map.of()))
         {
             service.run();
         }
     }
 
-    private void parse(ConsumerRecord<String, String> record) {
+    private void parse(ConsumerRecord<String, Message<String>> record) {
         System.out.println("=========================================");
         System.out.println("Sending Email");
         System.out.println(record.key());

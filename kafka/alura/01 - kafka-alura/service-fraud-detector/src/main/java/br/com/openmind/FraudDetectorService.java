@@ -3,13 +3,10 @@ package br.com.openmind;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -24,17 +21,16 @@ public class FraudDetectorService {
     public static void main(String[] args) throws InterruptedException, IOException {
 
         var fraudDetectorService = new FraudDetectorService();
-        try (var service = new KafkaService<>(FraudDetectorService.class.getSimpleName(),
+        try (var service = new KafkaService(FraudDetectorService.class.getSimpleName(),
                 EnumTopico.ECOMMERCE_NEW_ORDER,
                 fraudDetectorService::parse,
-                Order.class,
                 Map.of())){
             service.run();
         }
     }
     private final KafkaDispatcher<Order> orderDispatcher = new KafkaDispatcher<>();
 
-    private void parse(ConsumerRecord<String, Order> record) throws ExecutionException, InterruptedException {
+    private void parse(ConsumerRecord<String, Message<Order>> record) throws ExecutionException, InterruptedException {
         System.out.println("=========================================");
         System.out.println("Processing new order, checking for fraud");
         System.out.println(record.key());
@@ -47,15 +43,17 @@ public class FraudDetectorService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        Order order = record.value();
+        var message = record.value();
+        Order order = message.getPayload();
 
         if (isFraud(order)) {
             System.out.println("Order is a fraude!!! " + order.toString());
-            orderDispatcher.send(EnumTopico.ECOMMERCE_ORDER_REJECTED, order.getEmail(), order);
+            orderDispatcher.send(EnumTopico.ECOMMERCE_ORDER_REJECTED, order.getEmail(),
+                    message.getId().continueWith(getClass().getSimpleName())
+                    , order);
         } else {
             System.out.println("Approved " + order.toString());
-            orderDispatcher.send(EnumTopico.ECOMMERCE_ORDER_APPROVED, order.getEmail(), order);
+            orderDispatcher.send(EnumTopico.ECOMMERCE_ORDER_APPROVED, order.getEmail(), new CorrelationId(getClass().getSimpleName()), order);
 
         }
 

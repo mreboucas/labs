@@ -27,23 +27,22 @@ public class CreateUserService {
         }
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, ExecutionException, InterruptedException {
 
         var createUserService = new CreateUserService();
-        try (var service = new KafkaService<>(CreateUserService.class.getSimpleName(),
+        try (var service = new KafkaService(CreateUserService.class.getSimpleName(),
                 EnumTopico.ECOMMERCE_NEW_ORDER,
                 createUserService::parse,
-                Order.class,
                 Map.of())) {
             service.run();
         }
     }
 
-    private void parse(ConsumerRecord<String, Order> record) throws ExecutionException, InterruptedException, SQLException {
+    private void parse(ConsumerRecord<String, Message<Order>> record) throws ExecutionException, InterruptedException, SQLException {
         System.out.println("=========================================");
         System.out.println("Processing new order, checking for new user");
         System.out.println(record.value().toString());
-        Order order = record.value();
+        Order order = record.value().getPayload();
 
         if (isNewUser(order.getEmail())) {
             insertNewUser(order.getEmail());

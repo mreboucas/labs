@@ -2,6 +2,7 @@ package br.com.openmind;
 
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.Closeable;
@@ -12,7 +13,7 @@ import java.util.concurrent.Future;
 
 public class KafkaDispatcher<T> implements Closeable {
 
-    private final KafkaProducer<String, T> producer;
+    private final KafkaProducer<String, Message<T>> producer;
 
     public KafkaDispatcher() {
         this.producer = new KafkaProducer<>(properties());
@@ -30,9 +31,13 @@ public class KafkaDispatcher<T> implements Closeable {
 
         return properties;
     }
+    void send(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
+        Future<RecordMetadata> kafkaFuture = this.sendAsync(enumTopico, key, correlationId, payload);
+        kafkaFuture.get();
+    }
 
-    public void send(EnumTopico enumTopico, String key, T value) throws ExecutionException, InterruptedException {
-
+    Future<RecordMetadata> sendAsync(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
+        var value = new Message<>(correlationId, payload);
         var record = new ProducerRecord<>(enumTopico.getTopico(), key, value);
         Callback callback = (data, ex) -> {
             if (ex != null) {
@@ -42,15 +47,13 @@ public class KafkaDispatcher<T> implements Closeable {
             System.out.println("Sucesso enviando: " + data.topic() + ":::partition " + data.partition() + "/ offset " + data.offset() + "/ timestamp " + data.timestamp());
         };
         //get torna processo síncrono.
-        RecordMetadata recordMetadata = producer.send(record, callback).get();
-        System.out.println(recordMetadata.offset());
+//        RecordMetadata recordMetadata = producer.send(record, callback).get();
+//        System.out.println(recordMetadata.offset());
 //
         //Assíncrono
-//        Future<RecordMetadata> kafkaFuture = producer.send(record, callback);
-//        while(!kafkaFuture.isDone()) {
-//            System.out.println(kafkaFuture.isDone());
-//        }
-//        System.out.println(kafkaFuture.isDone());
+        Future<RecordMetadata> kafkaFuture = producer.send(record, callback);
+        //System.out.println(kafkaFuture.isDone());
+        return kafkaFuture;
     }
 
     @Override
