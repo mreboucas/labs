@@ -1,5 +1,7 @@
 package br.com.openmind;
 
+import br.com.openmind.consumer.KafkaService;
+import br.com.openmind.dispatcher.KafkaDispatcher;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 

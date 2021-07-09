@@ -1,5 +1,6 @@
-package br.com.openmind;
+package br.com.openmind.consumer;
 
+import br.com.openmind.Message;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.util.concurrent.ExecutionException;

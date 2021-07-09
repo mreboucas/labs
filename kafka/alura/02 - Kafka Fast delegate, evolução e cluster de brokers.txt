@@ -1,0 +1,215 @@
+Link do fonte do curso:
+https://github.com/alura-cursos/kafka-introducao-e-microservicos
+
+##########################################
+# 01 - Novos Produtores e Consumidores
+##########################################
+Criou o banco SQLite : users-service (module)
+
+
+O que aprendemos nessa aula:
+    Como fazer um consumidor também produzir
+    Como lidar com patterns e novos topics
+    Como acessar um banco de dados
+    Problemas de schema que vão sendo levantados durante a evolução dos serviços
+
+
+##########################################
+# 02 - Evoluindo um Serviço
+##########################################
+
+
+Definindo a chave única para manter a ordem correta de processamrnto das mensagens que chegam no tópico:
+Foi elencado o e-mail, vejamos:
+Classe: NewOrderMain.java
+dispatcher.send(EnumTopico.ECOMMERCE_NEW_ORDER, email, order);
+
+Criando uma camada de acesso ao banco para checar se o usuário existe antes de criá-lo
+
+
+O que aprendemos nessa aula:
+    como evoluir um serviço sem quebrar os schemas
+    como pensar a evolução de um serviço
+    discutindo UUID e id único
+
+Link do Projeto: https://github.com/alura-cursos/kafka-cluster-de-brokers-e-microservicos/archive/aula2.zip
+
+
+##########################################
+# 03 - Servidor HTTP
+##########################################
+
+Criar uma camada HTTP
+Criou o service-http-ecommerce - add a library:
+https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-servlet
+
+Acessar o servidor: http://localhost:8080/new
+Acessar o servidor com params: http://localhost:8080/new?email=marcelo@gmail.com&amount=250
+
+
+fast delegate: menor 'quantidade' de informação no tópico de entrada, para facilitar o sucesso da transação por meio de delegação rápida para outras camadas/tópicos.
+Objetivo: processar o quanto antes o dado de entrada e delegar para quem de direitor for. Facilita o reprocessamento, em caso de erro.
+
+O que aprendemos nessa aula:
+    como usar um servidor http embarcado
+    como criar um serviço http
+    como enviar mensagens a partir do servidor http
+    a vantagem de um fast delegate
+
+
+##########################################
+# 04 - Cluster de Brokers
+##########################################
+Link do projeto: https://github.com/alura-cursos/kafka-cluster-de-brokers-e-microservicos/archive/aula3.zip
+
+Copiar o server.properties
+cp /config/server.properties /config/server2.properties
+Editaros seguintes campos:
+broker.id de 0 par 2 (para seguir o formato do 2 do nome server2.properties)
+log.dirs=C:/development/TOOLS/kafka/kafka/data/kafka2 (criar essa nova pasta do kafka)
+listeners=PLAINTEXT://:9093 (esse campo vem comentado e assume por default a porta 9092 - é o líder) a gente descomenta
+Subir novo broker: kafka-server-start /config.server2.properties
+
+>>Descrever tópicos [Aqui vc verá as réplicas e em que partição está os tópicos]
+
+Mostar os tópicos sendo gerenciadas por apenas um broker kafka (leader 0 indica isso - estão apenas no 9092 - todas as partições apontadas)
+CLI: kafka-topics --bootstrap-server localhost:9092 --describe
+
+Topic: ECOMMERCE_NEW_ORDER	PartitionCount: 3	ReplicationFactor: 1	Configs: cleanup.policy=delete,segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER	Partition: 0		Leader: 0	Replicas: 0	Isr: 0
+Topic: ECOMMERCE_NEW_ORDER	Partition: 1		Leader: 0	Replicas: 0	Isr: 0
+Topic: ECOMMERCE_NEW_ORDER	Partition: 2		Leader: 0	Replicas: 0	Isr: 0
+
+ReplicationFactor: 1 - todas informações estão no llíder 9092 apenas
+Leader: 0	- apontando apenas para um único broker (9092 que é o líder)
+Replicas: 0 - não possui réplicas - tudo está no líder...
+
+Fator de replicação do tópico: é imprescindível definir na criação do mesmo.
+
+ALterar o fator de replicação do tópico:
+CLI: kafka-topics --bootstrap-server zookeeper localhost:2181 --alter --topic ECOMMERCE_NEW_ORDER --partitions 3  --replication-factor 2
+Msg: kafka-topics : Option "[replication-factor]" can't be used with option "[alter]"
+Solução: alterar o server.properties e server2.properties:
+adicionar a seguinte configuração:
+default.replication.factor = 2
+
+Restartat os dois BROKERS, parar os serviços e remover os diretórios data (rm -fr ../data/kafka/* e rm -fr ../data/zookeeper/*)
+
+Analisando de novo os tópicos com dois brokers (cluster de brokers):
+CLI: kafka-topics --bootstrap-server localhost:9092 --describe
+
+Topic: ECOMMERCE_NEW_ORDER	PartitionCount: 3	ReplicationFactor: 2	Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER	Partition: 0	Leader: 0	Replicas: 0,2	Isr: 0,2
+Topic: ECOMMERCE_NEW_ORDER	Partition: 1	Leader: 2	Replicas: 2,0	Isr: 2,0
+Topic: ECOMMERCE_NEW_ORDER	Partition: 2	Leader: 0	Replicas: 0,2	Isr: 0,2
+
+Topic: ECOMMERCE_SEND_EMAIL	PartitionCount: 3	ReplicationFactor: 2	Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_SEND_EMAIL	Partition: 0	Leader: 0	Replicas: 0,2	Isr: 0,2
+Topic: ECOMMERCE_SEND_EMAIL	Partition: 1	Leader: 2	Replicas: 2,0	Isr: 2,0
+Topic: ECOMMERCE_SEND_EMAIL	Partition: 2	Leader: 0	Replicas: 0,2	Isr: 0,2
+
+Observe que agora o fator de replicação aumentou: ReplicationFactor: 2 e para partição possui uma réplica:
+Leader: 0 (está no broker líder)	
+Replicas: 0,2 (tem duas réplicas)	
+Isr: 0,2 (fator de replicação ISR - mostra que as réplicas estão atualizadas) -  in-sync-replics
+
+Se derrubar o broker 9092, o 9093 automaticamente será o líder.
+
+Vejamos, o leader de todos os tópicos ficou sendo o 2
+Topic: ECOMMERCE_NEW_ORDER	PartitionCount: 3	ReplicationFactor: 2	Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER	Partition: 0	Leader: 2	Replicas: 0,2	Isr: 2
+Topic: ECOMMERCE_NEW_ORDER	Partition: 1	Leader: 2	Replicas: 2,0	Isr: 2
+Topic: ECOMMERCE_NEW_ORDER	Partition: 2	Leader: 2	Replicas: 0,2	Isr: 2
+
+Isr -> mostra as réplicas que estão atualizadas nesse instante.
+
+Curiosidade: o broker líder se encarrega de encontar os demais brokers que subiram... o 9092 já acha por default o 9093
+
+Topic: __consumer_offsets       PartitionCount: 50      ReplicationFactor: 1    Configs: compression.type=producer,clean
+Pelo fato de ReplicationFactor: 1 para os offsets, ao derrubar o broker 0 (9092) algumas mensagens ficam sem sre processadas, dai tem que subir o 9092.
+SOlução: alterar os seguintes  campos no server.properties e server2.properties (pxm aula)
+Recomenda-se que em PROD esse número seja maior que 1 para o cluster de brokers trabalhar de boa quando um cair.
+offsets.topic.replication.factor=3 (tem que subir pelo menos 3 brokers - senão dará erro)
+transaction.state.log.replication.factor=3
+default.replication.factor=3
+
+#Quantidade padrão de partições (professor não falou, fiz um teste. Se kafka no ar, tem que apagar tudo da pasta kafka/data e subir de novo):
+num.partitions=3
+
+#04.04 - CLuster de 5 brokers explorando líders e réplicas.
+ALterar nos dois server.properties 
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+default.replication.factor=3
+
+Criar 5 brokers (server.properties até o server4.properties)
+Alterar broker.id, log e ports
+
+ALterar as partições dos tópicos
+kafka-topics --bootstrap-server localhost:9092 --alter --topic ECOMMERCE_NEW_ORDER --partitions 3
+kafka-topics --bootstrap-server localhost:9092 --alter --topic ECOMMERCE_SEND_EMAIL --partitions 3
+
+> Quando sobe os brokers e derruba algum
+Topic: ECOMMERCE_NEW_ORDER      PartitionCount: 3       ReplicationFactor: 3    Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER      Partition: 0    Leader: 1       Replicas: 3,4,1 Isr: 1,4
+Topic: ECOMMERCE_NEW_ORDER      Partition: 1    Leader: 4       Replicas: 4,1,2 Isr: 1,4,2
+
+Replicas: 3,4,1 (possui réplicas nos 3,4,1) Isr: 1,4 (apenas os brokers 1 e 4 estão atualizados) o 3 está derrubado
+Replicas: 4,1,2 Isr: 1,4,2 (réplicas e atualizações todas iguais)
+
+Subir um 5 broker e o que ocorreu:
+Parou um dos brokers anterioes, subiu ele novamente;
+Enviou uma order via rest.
+Obs.: o broker 5 não entrou na jogada.
+Só entraá quando houver um balanceamento por criação/alteração de tópico etc.
+ANtes da entrada da nova partição, já com o broker UP:
+Topic: ECOMMERCE_NEW_ORDER      PartitionCount: 3       ReplicationFactor: 3    Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER      Partition: 0    Leader: 1       Replicas: 3,4,1 Isr: 1,4,3
+Topic: ECOMMERCE_NEW_ORDER      Partition: 1    Leader: 4       Replicas: 4,1,2 Isr: 1,4,2
+Topic: ECOMMERCE_NEW_ORDER      Partition: 2    Leader: 1       Replicas: 1,2,3 Isr: 1,2,3
+
+Ex.: alterou o número de partições e o kafka incluir o 5: kafka-topics --bootstrap-server localhost:9092 --alter --topic ECOMMERCE_NEW_ORDER --partitions 3
+Possível ver nesse CLI: kafka-topics --bootstrap-server localhost:9092 --describe
+
+DEPOIS da entrada da nova partição, veja a presenção do 5 (última linha):
+Topic: ECOMMERCE_NEW_ORDER      PartitionCount: 4       ReplicationFactor: 3    Configs: segment.bytes=1073741824
+Topic: ECOMMERCE_NEW_ORDER      Partition: 0    Leader: 1       Replicas: 3,4,1 Isr: 1,4,3
+Topic: ECOMMERCE_NEW_ORDER      Partition: 1    Leader: 4       Replicas: 4,1,2 Isr: 1,4,2
+Topic: ECOMMERCE_NEW_ORDER      Partition: 2    Leader: 1       Replicas: 1,2,3 Isr: 1,2,3
+Topic: ECOMMERCE_NEW_ORDER      Partition: 3    Leader: 1       Replicas: 1,4,5 Isr: 1,4,5
+
+ACKS ==== Isr
+Acks = ALL -> indica que o broker fará de forma segura o sincronismo com todas as réplicas garantindo reliability (confiabilidade) das informações enviadas.
+KafkaDispatcher
+properties.setProperty(ProducerConfig.ACKS_CONFIG, "all"); é necessário ter mais de um BROKER para fazer a réplica fazer sentido :)
+
+--Listar os Offsets (CURRENT-OFFSET) -> LAG -> Qtd de Mensagens (LOG-END-OFFSET) - informações dos GRUPOS (WARNING)
+CLI: kafka-consumer-groups --bootstrap-server localhost:9092 --all-groups --describe
+
+
+
+
+O que aprendemos nessa aula:
+
+    o problema do single point of failure
+    a recuperação mais simples de um broker
+    a recuperação e o rebalanceamento de um serviço
+    como levantar mais um broker e rodar um cluster
+    como efetuar a replicação
+    o que é um líder
+    a configuração do acks 0, 1 e all
+    como utilizar garantias, reliability, velocidade, partições e replicação
+
+
+PROBLEMAS INTELLIJ:
+Package doesn't exist error in intelliJ
+https://stackoverflow.com/questions/20137020/package-doesnt-exist-error-in-intellij
+AS vezes tem que fazer esse processo mais de 1x... rs
+
+Link do projeto: https://github.com/alura-cursos/kafka-cluster-de-brokers-e-microservicos/archive/master.zip
+
+
+PROBLEMAS KAFKA:
+Connection to node 0 (host.docker.internal/192.168.0.122:9092) could not be established. Broker may not be available.
+kAFKA broker da porta 9092 foi derrubado... 
+

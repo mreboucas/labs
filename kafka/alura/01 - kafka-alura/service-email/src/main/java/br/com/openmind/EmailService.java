@@ -1,28 +1,32 @@
 package br.com.openmind;
 
+import br.com.openmind.consumer.ConsumerService;
+import br.com.openmind.consumer.ServiceRunner;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
-public class EmailService {
+/**
+ * @PATTERN - FACTORY
+ */
+public class EmailService implements ConsumerService<String> {
 
-    public static void main(String[] args) throws IOException {
-        var emailService = new EmailService();
-        try (var service = new KafkaService(EmailService.class.getSimpleName(),
-                EnumTopico.ECOMMERCE_SEND_EMAIL,
-                emailService::parse,
-                Map.of()))
-        {
-            service.run();
-        }
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+        new ServiceRunner<>(EmailService::new).start(5);
+    }
+    public String getConsumerGroup() {
+        return getClass().getSimpleName();
+    }
+    public EnumTopico getTopico() {
+        return EnumTopico.ECOMMERCE_SEND_EMAIL;
     }
 
-    private void parse(ConsumerRecord<String, Message<String>> record) {
+    public void parse(ConsumerRecord<String, Message<String>> record) {
         System.out.println("=========================================");
         System.out.println("Sending Email");
         System.out.println(record.key());

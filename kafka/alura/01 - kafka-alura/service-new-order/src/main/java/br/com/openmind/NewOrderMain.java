@@ -1,5 +1,6 @@
 package br.com.openmind;
 
+import br.com.openmind.dispatcher.KafkaDispatcher;
 import br.com.openmind.enumeration.EnumTopico;
 
 import java.io.IOException;
@@ -14,7 +15,8 @@ public class NewOrderMain {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException, IOException {
         try (var dispatcher = new KafkaDispatcher<Order>()) {
-            try (var emailDispatcher = new KafkaDispatcher<String>()) {
+            //FAST  DELEGATE - FOI REMOVIDO O ENVIO DE EMAIL
+           // try (var emailDispatcher = new KafkaDispatcher<String>()) {
                // var email = "marcelo@email.com";
                 for (int i = 0; i < 10; i++) {
 
@@ -23,12 +25,12 @@ public class NewOrderMain {
                     var email = Math.random() + "@email.com";
                     var order = new Order(orderId, amount, email);
                     dispatcher.send(EnumTopico.ECOMMERCE_NEW_ORDER, email, new CorrelationId(NewOrderMain.class.getSimpleName()), order);
-
-                    var emailCode = "Thank you for order!! We are processing your order!";
-                    emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, new CorrelationId(NewOrderMain.class.getSimpleName()), emailCode);
+    // foi migrado para o EmailNewOrderService.java
+//                    var emailCode = "Thank you for order!! We are processing your order!";
+//                    emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, new CorrelationId(NewOrderMain.class.getSimpleName()), emailCode);
 
                 }
-            }
+          //  }
         }
     }
 }

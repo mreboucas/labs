@@ -56,7 +56,7 @@ A chave randômica permite as msgs serem enviadas para todas as partições do t
 
 DICA: nº de partiçoes sempre >= consumidores. Evita consumidores ficarem useless.
 
-Analisar os groups de consumo por tópico:
+Analisar os groups de consumo por tópico (group, topic, partition, offset lag etc) - WARNING:
 kafka-consumer-groups --bootstrap-server localhost:9092 --all-groups --describe
 
 1) Output quando se tem consumer plugado no tópico:
@@ -151,5 +151,7 @@ Link do projeto: https://github.com/alura-cursos/kafka-introducao-e-microservico
 #############################################
 # 05 - Serialização customizada
 #############################################
+Serialize e Deserializer - Classes do kafka foram implementadas
+Classe: GsonDeserializer e GsonSerializer
 
 

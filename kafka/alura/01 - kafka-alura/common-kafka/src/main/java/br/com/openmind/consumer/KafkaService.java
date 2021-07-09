@@ -1,6 +1,10 @@
-package br.com.openmind;
+package br.com.openmind.consumer;
 
+import br.com.openmind.Message;
+import br.com.openmind.dispatcher.GsonSerializer;
+import br.com.openmind.dispatcher.KafkaDispatcher;
 import br.com.openmind.enumeration.EnumTopico;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -14,16 +18,16 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
-class KafkaService<T> implements Closeable {
+public class KafkaService<T> implements Closeable {
     private final KafkaConsumer<String, Message<T>> consumer;
     private final ConsumerFunction<T> parse;
 
-    KafkaService(String groupId, EnumTopico enumTopico, ConsumerFunction<T> parse, Map<String,String> properties) {
+    public KafkaService(String groupId, EnumTopico enumTopico, ConsumerFunction<T> parse, Map<String,String> properties) {
         this(parse, groupId, properties);
         consumer.subscribe(Collections.singletonList(enumTopico.getTopico()));
     }
 
-    KafkaService(String groupId, Pattern topic, ConsumerFunction<T> parse, Map<String,String> properties) {
+    public KafkaService(String groupId, Pattern topic, ConsumerFunction<T> parse, Map<String,String> properties) {
         this(parse, groupId, properties);
         consumer.subscribe(topic);
     }
@@ -33,7 +37,7 @@ class KafkaService<T> implements Closeable {
         this.consumer = new KafkaConsumer<>(getProperties(groupId, properties));
     }
 
-    void run() throws ExecutionException, InterruptedException {
+    public void run() throws ExecutionException, InterruptedException {
         try(var deadLetter = new KafkaDispatcher<>()) {
             while (true) {
                 /**
@@ -68,10 +72,24 @@ class KafkaService<T> implements Closeable {
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GsonDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        //representa o campo CLIENT-ID: kafka-consumer-groups.bat --all-groups --bootstrap-server localhost:9092 --describe
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
         //Garantir que a cada mensagem lida, ela seja comitada e diminiu o problema de commit por conta do rebalanceamento quando se
         //consome um número elevado de mensagens. Ex.: se deixar para comitar depois de processa um número elevado de msg: 50 por exemplo.
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+
+        //MANTER A IDEMPOTÊNCIA - CONSUMIDOR
+        String offsetResetConfig[] = {"earliest","latest","none"};
+        //https://kafka.apache.org/21/javadoc/?org/apache/kafka/clients/consumer/ConsumerConfig.html
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, offsetResetConfig[0]);
+        //Consome apenas as mensagens que tenham sido commitadas para todas as réplicas
+        //quando se usa o ACK = ALL. Evita que mensagens não replicadas enviadas pelo produtor
+        // sejam produzidas e o consumidor as leia de novo.
+        /**Apenas mensagens comitadas sejam consumidos pelo consumer */
+        //properties.setProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        //Desabilita o commit automático
+        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,"false");
+
         properties.putAll(overrideProperties);
         return properties;
     }

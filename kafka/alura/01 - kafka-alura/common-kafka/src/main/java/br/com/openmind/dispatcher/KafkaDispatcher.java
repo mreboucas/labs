@@ -1,12 +1,12 @@
-package br.com.openmind;
+package br.com.openmind.dispatcher;
 
+import br.com.openmind.CorrelationId;
+import br.com.openmind.Message;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.producer.*;
-import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -31,13 +31,13 @@ public class KafkaDispatcher<T> implements Closeable {
 
         return properties;
     }
-    void send(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
+    public void send(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
         Future<RecordMetadata> kafkaFuture = this.sendAsync(enumTopico, key, correlationId, payload);
         kafkaFuture.get();
     }
 
-    Future<RecordMetadata> sendAsync(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
-        var value = new Message<>(correlationId, payload);
+    public Future<RecordMetadata> sendAsync(EnumTopico enumTopico, String key, CorrelationId correlationId, T payload) throws ExecutionException, InterruptedException {
+        var value = new Message<>(correlationId.continueWith("_" + enumTopico.getTopico()), payload);
         var record = new ProducerRecord<>(enumTopico.getTopico(), key, value);
         Callback callback = (data, ex) -> {
             if (ex != null) {

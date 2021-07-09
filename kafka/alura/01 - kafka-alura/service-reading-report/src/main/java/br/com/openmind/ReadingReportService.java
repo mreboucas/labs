@@ -1,5 +1,8 @@
 package br.com.openmind;
 
+import br.com.openmind.consumer.ConsumerService;
+import br.com.openmind.consumer.KafkaService;
+import br.com.openmind.consumer.ServiceRunner;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
@@ -13,21 +16,14 @@ import java.util.concurrent.ExecutionException;
  * Intelijj: Cria nova instância do Reading report service : [LSE] combobo > Edit configurations > cria uma nova instância com novo nome
  * Essa edição servirá para se conectar a mais de uma partição.
  */
-public class ReadingReportService {
+public class ReadingReportService implements ConsumerService<User> {
 
     private static final Path SOURCE = new File("src/main/resources/report.txt").toPath();
 
-    public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
-
-         var reportService = new ReadingReportService();
-        try (var service = new KafkaService<>(ReadingReportService.class.getSimpleName(),
-                EnumTopico.ECOMMERCE_USER_GENERATE_READING_REPORT,
-                reportService::parse,
-                Map.of())){
-            service.run();
-        }
+    public static void main(String[] args) {
+        new ServiceRunner<>(ReadingReportService::new).start(5);
     }
-    private void parse(ConsumerRecord<String, Message<User>> record) throws ExecutionException, InterruptedException, IOException {
+    public void parse(ConsumerRecord<String, Message<User>> record) throws IOException {
         System.out.println("=========================================");
         System.out.println("Processing report for: " + record.value());
         var message = record.value();
@@ -38,9 +34,16 @@ public class ReadingReportService {
 
         System.out.println("File created " + target.getAbsolutePath());
 
+    }
 
+    @Override
+    public EnumTopico getTopico() {
+        return EnumTopico.ECOMMERCE_USER_GENERATE_READING_REPORT;
+    }
 
-
+    @Override
+    public String getConsumerGroup() {
+        return getClass().getSimpleName();
     }
 
 //    private boolean isFraud(Order order) {

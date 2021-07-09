@@ -1,5 +1,6 @@
 package br.com.openmind;
 
+import br.com.openmind.dispatcher.KafkaDispatcher;
 import br.com.openmind.enumeration.EnumTopico;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -8,8 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 public class GenerateAllReportServlet extends HttpServlet {

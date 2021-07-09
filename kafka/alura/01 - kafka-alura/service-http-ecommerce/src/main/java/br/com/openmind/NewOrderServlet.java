@@ -1,13 +1,12 @@
 package br.com.openmind;
 
+import br.com.openmind.dispatcher.KafkaDispatcher;
 import br.com.openmind.enumeration.EnumTopico;
-import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.servlet.Source;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -17,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 public class NewOrderServlet extends HttpServlet {
 
     private final KafkaDispatcher<Order> dispatcher = new KafkaDispatcher<>();
-    private final KafkaDispatcher<String> emailDispatcher = new KafkaDispatcher<>();
+//    private final KafkaDispatcher<String> emailDispatcher = new KafkaDispatcher<>();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -28,7 +27,7 @@ public class NewOrderServlet extends HttpServlet {
     public void destroy() {
         super.destroy();
         dispatcher.close();
-        emailDispatcher.close();
+//        emailDispatcher.close();
     }
 
     @Override
@@ -42,8 +41,10 @@ public class NewOrderServlet extends HttpServlet {
             var order = new Order(orderId, amount, email);
             dispatcher.send(EnumTopico.ECOMMERCE_NEW_ORDER, email, new CorrelationId(getClass().getSimpleName()), order);
 
-            var emailCode = "Thank you for order!! We are processing your order!";
-            emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, new CorrelationId(getClass().getSimpleName()), emailCode);
+            // Foi transferido para EmailNewOrderService - mantendo o fast delegate nessa camada.
+//            var emailCode = "Thank you for order!! We are processing your order!";
+//            emailDispatcher.send(EnumTopico.ECOMMERCE_SEND_EMAIL, email, new CorrelationId(getClass().getSimpleName()), emailCode);
+
             System.out.println("New order sent successfully.");
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().println("New order sent successfully.");

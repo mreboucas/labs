@@ -1,5 +1,6 @@
 package br.com.openmind;
 
+import br.com.openmind.consumer.KafkaService;
 import br.com.openmind.enumeration.EnumTopico;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -7,6 +8,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 /**
@@ -14,7 +16,7 @@ import java.util.regex.Pattern;
  */
 public class LogService {
 
-    public static void main(String[] args) throws InterruptedException, IOException {
+    public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
         var logService = new LogService();
         try (var service = new KafkaService(LogService.class.getSimpleName(),
                 //Se atentar, se o log service estiver rodando, ele não escutará novos tópicos/subjects que por

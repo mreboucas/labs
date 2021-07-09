@@ -1,0 +1,112 @@
+
+##########################################
+# 01 - Batch
+##########################################
+
+Usou o fast delegate para fazer o processamento em BATCH, enviando apenas uma simples mensagem
+Classes: [service-http-ecommerce] HttpEcommerceService : GenerateAllReportServlet : Dispatcher -> 
+         [service-users] : BatchSendMessageService : Consumer/Dispatcher ->
+		 [service-reading-report] : ReadingReportService : Consumer
+
+
+O que aprendemos nessa aula:
+
+    criando um novo serviço que faz IO
+    consideramos o acesso a disco como serviço externo
+    diversas formas de trabalhar batch
+    usando o batch com http fast delegate
+    usando um processo assíncrono e mantendo o isolamento do banco de usuários
+
+Problema IO Exception com o report.txt
+Edit configurations do module no intellij e no microservice: working directory: %MODULE_WORKING_DIR%	
+
+##################################################
+# 02 - Serialização, deserialização customizada
+##################################################
+Link do  Projeto: https://github.com/alura-cursos/kafka-3/archive/aula1.zip
+
+#02.02 -  A importância de um CorrelationId
+
+Identificar nos passos de onde a mensagem partiiu, ou seja por quais microservices ela permeou, pois são vários caminhos de dispatcher/consumer. Veja os steps como exemplo:
+[service-http-ecommerce] HttpEcommerceService : GenerateAllReportServlet : Dispatcher -> 
+[service-users] : BatchSendMessageService : Consumer/Dispatcher ->
+[service-reading-report] : ReadingReportService : Consumer
+
+Saída: correlationId: concatenação de strings para identificação das msgs
+
+#02.03 e #02.04 (Serialização/Deserealização customizadas)
+Classes: Message (correlation id e Wrapper), MessageAdapter, GsonSerializer, GsonDeserializer
+
+O que aprendemos nessa aula:
+    a importância de um correlation id
+    serialização e deserialização customizada em sua própria camada
+    wrapping de mensagens com tipo próprio
+
+##################################################
+# 03 - CorrelationID
+##################################################
+Criou a classe: CorrelationId e colocou na classe kafkaDispatcher, antes do send
+
+O que aprendemos nessa aula:
+    como implementar um correlation id
+    a importância da mensagem como wrapper ou headers
+    como manter o histórico de mensagens que geraram uma determinada mensagem
+
+Link do projeto: https://github.com/alura-cursos/kafka-cluster-de-brokers-e-microservicos/archive/aula3.zip
+
+
+
+##################################################
+# 04 - Arquitetura e Falhas até Agora
+##################################################
+Descrever os tópicos e leader (líderes)
+CLI: kafka-topics.bat --bootstrap-server localhost:9095 --describe
+Descrever os grupos e Offessets, LAGs
+CLI: kafka-consumer-groups.bat --all-groups --bootstrap-server localhost:9095 --describe
+
+Mostra os grupos que não estão conectador por consumidores: 
+
+Consumer group 'FraudDetectorService' has no active members.
+GROUP                TOPIC               PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
+FraudDetectorService ECOMMERCE_NEW_ORDER 3          0               0               0               -               -               -
+FraudDetectorService ECOMMERCE_NEW_ORDER 2          1               1               0               -               -               -
+FraudDetectorService ECOMMERCE_NEW_ORDER 1          0               0               0               -               -               -
+FraudDetectorService ECOMMERCE_NEW_ORDER 0          7               12              5               -               -               -
+
+Consumer group 'ReadingReportService' has no active members.
+
+GROUP                TOPIC                                  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST CLIENT-ID
+ReadingReportService ECOMMERCE_USER_GENERATE_READING_REPORT 2          84              90              6               -               -     -
+ReadingReportService ECOMMERCE_USER_GENERATE_READING_REPORT 1          98              105             7               -               -     -
+ReadingReportService ECOMMERCE_USER_GENERATE_READING_REPORT 0          70              75              5               -               -     -
+
+
+
+
+O que aprendemos nessa aula:
+
+    revisando tópicos e partições
+    revisando consumer groups
+    revisando líderes e réplicas
+    revisando rebalanceamento
+
+Link do projeto: https://github.com/alura-cursos/kafka-cluster-de-brokers-e-microservicos/archive/aula4.zip
+
+##################################################
+# 05 - Assincronicidade, retrires e deadletter
+##################################################
+
+#05.02 - retries e reprocessamento
+Criou-se os métodos : send, sendAsync
+
+Tem no curso kafka v2)
+max.in.flight.requests.per.connection -> default = 5 (se quiser manter com afinco a ordem de execução das msgs nos tópicos em casa de rebalanceamento)
+Essa propriedade é em caso de extrema necessudade que a ordem é um fator importante. Tem que setar para 1, porém perde performance e mantém a ordem.
+Para testar isso, ele derrubou 3 dos brokers, e enviou a msg assíncronna http://localhost:8080/admin/generate-reports -> BatchSendMessageService
+No restabelecimento dos brokers é que poderá ocorrer a desordenação no envio, pois ele tem 5 connections in flight
+
+deadletter -> ele criou um throe forçado e dentro da exception só enviou a msg para um tópico de DEADLETTER.
+Eu vi no tutorial abaixo, que além do DEADLETTER, ao enviar, se não der certo, vai para um tópico de FAIL.
+https://blog.pragmatists.com/retrying-consumer-architecture-in-the-apache-kafka-939ac4cb851a
+
+Link do projeto: https://github.com/alura-cursos/kafka-3/archive/master.zip

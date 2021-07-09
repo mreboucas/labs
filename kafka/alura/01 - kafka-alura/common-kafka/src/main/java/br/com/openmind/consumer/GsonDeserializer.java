@@ -1,5 +1,7 @@
-package br.com.openmind;
+package br.com.openmind.consumer;
 
+import br.com.openmind.Message;
+import br.com.openmind.MessageAdapter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.kafka.common.serialization.Deserializer;

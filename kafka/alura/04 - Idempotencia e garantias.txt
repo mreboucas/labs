@@ -1,0 +1,71 @@
+
+##########################################
+# 01 - Organização do serviço de emails
+##########################################
+Criou uma camada de e-mail - FAST delegate para new order.
+Classe: EmailNewOrderService.java
+
+
+##########################################
+# 02 - Camada de serviços
+##########################################
+#02.02 Extraindo uma camada de Serviço
+Estratégia: Factory Pattern e Metoh reference
+Criou uma factory para enviar email de diversos tópicos (FACTORY PATTERN)
+
+Module: EmailNewOrderService
+Classe principal da chamada: EmailService -> main() -> new ServiceProdiver().run(EmailService::new);
+EmailService implements ConsumerService<String> 
+
+Classes: ServiceProdiver
+interfaces: ServiceFactory e ServiceFactory
+
+#02.03 - Paralelização por thread (multithread)
+Essas threads criam uma quanitade X de consumidores no mesmo microservice
+Classes: EmailService e ReadReportService
+module: kafka-common -> classes: ServiceFactory, ServiceProdiver, ServiceRunner e ConsumerService
+
+
+O que aprendemos nessa aula:
+    extraindo uma camada de interface de serviço
+    paralelizando com thread pools
+    simplicidade ao criar novos componentes
+
+Link do projeto: https://github.com/alura-cursos/kafka4/archive/aula2.zip
+
+##########################################
+# 03 - Commits e offsets
+##########################################
+Falou nada de commits manual/automático...
+
+O que aprendemos nessa aula:
+    como lidar com latest e earliest
+	
+##########################################
+# 04 - Lidando com mensagens duplicadas
+##########################################
+Só comentou o que tinha na documentação do kafka e sobre um post do medium (controlar o consumo no banco de dados :(( - trabalhoso)
+
+O que aprendemos nessa aula:
+
+    o problema de mensagens duplicadas
+    como usar commit manual e configurar os dois lados para offsets manuais
+	
+##########################################
+# 05 - Idempotência
+##########################################
+O maldito só fez a idempotência via checagem do banco de dados... não curti mt, não explorou as propriedades do próprio kafka.
+
+
+
+O que aprendemos nessa aula:
+
+    o que é idempotência
+    como implementá-la através de IDs naturais no banco
+    como extrair um módulo para banco de dados
+    idempotência e fast delegate
+    como lidar com idempotência em clientes externos
+
+
+Link do projeto: https://github.com/alura-cursos/kafka4/archive/aula5.zip
+
