@@ -2,12 +2,20 @@
  Fazer essa confuguração: módulo 5 - kafka udemy-torrent (francês) -> aula 10 e 11 (windows) tem também no curso kafka para iniciantes - udemy
  --1º Subir zookeeper
  zookeeper-server-start.bat C:\development\TOOLS\kafka\kafka\config\zookeeper.properties  
+ 
+ //Comando otimizado
+ zookeeper-server-start.bat ..\config\zookeeper.properties  
+ 
  Subir no gitbash
  zookeeper-server-start.bat C:/development/TOOLS/kafka/kafka/config/zookeeper.properties
 
  
  --2º Subir kafka
  kafka-server-start.bat C:\development\TOOLS\kafka\kafka\config\server.properties
+ 
+ //Comando otimizado
+ kafka-server-start.bat ..\config\server.properties
+ 
  Subir no gitbash
  kafka-server-start.bat C:/development/TOOLS/kafka/kafka/config/server.properties
  
@@ -32,6 +40,8 @@
  # Commands
  ##########################
  Obs.: o localhost pode ser o ip interno do seu server
+ 
+ Obs.: para criar os tópicos, a partir de uma versão 2.x do kafka não precisa mais especificar o comando zookeeper e sim apenas o --bootstrap-server.
  
  >>Listar tópicos / list topics
  CLI: kafka-topics --bootstrap-server localhost:9092 --list
@@ -649,14 +659,14 @@ Acessar o diretório do concluence, após descompact para dar um start/stop:
 ./confluent local stop
 ./confluent local destroy
 
-AULA 03 - Multiple kafka brokers:
+AULA 03 - Multiple kafka brokers (CLUSTER KAFKA):
 
 Acessar a pasta ./data do kafka e fazer cópia dos arquivos: server.properties -> server1.properties, serverN.properties
 Editar os arquivos a partir do 1 e alterar três configs: 
 broker.id=1
 log.dirs >> diretório do log URL/kafka1 (depois tem que criar esse diretório na pasta do KAFKA)
 listeners=PLAINTEXT://:9093 
-Para cada broker você deve fazer um increase na numeração editndo as cópias do arquivo server.properties.
+Para cada broker você deve fazer um increase na numeração editando as cópias do arquivo server.properties.
 
 Subir as instâncias
 kafka-server-start PATH/server.properties

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: graal-vm-warmup
+  jackson:
+    time-zone: America/Sao_Paulo
+    locale: pt-BR
+
+server:
+  port: 9090
+  servlet:
+    context-path: /graalvm

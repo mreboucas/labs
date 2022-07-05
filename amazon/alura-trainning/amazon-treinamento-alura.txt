@@ -277,6 +277,12 @@ aws ec2 stop-instances instance-id ID-INSTANCIA-EC2-AWS
 aws ec2 help
 
 
+## Create a bucket aws (rebouçou pegou esse script)
+>>  aws s3api create-bucket --bucket <BUCKET-NAME> --region <REGION>
+
+aws s3api create-bucket --bucket airfox-vv-filesharing-finance-vv --region us-east-1
+
+link reference about s3 bucket: https://docs.aws.amazon.com/cli/latest/reference/s3api/create-bucket.html
 
 Nesta aula, aprendemos:
 
